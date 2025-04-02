@@ -1,0 +1,21 @@
+{
+  "name": "uranai-service-lp",
+  "version": "1.0.0",
+  "description": "ライフサイクル・ポテンシャル占術サービス - モバイルファースト縦型LP版",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "",
+    "start": "",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "pdfkit": "^0.14.0"
+  },
+  "devDependencies": {
+    "vitest": "^1.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

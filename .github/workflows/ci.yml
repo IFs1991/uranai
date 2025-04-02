@@ -1,0 +1,39 @@
+# .github/workflows/ci.yml
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [ main ] # mainブランチへのpush時に実行
+  pull_request:
+    branches: [ main ] # mainブランチへのプルリクエスト時にも実行
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # 実行環境 (Linux)
+
+    strategy:
+      matrix:
+        node-version: [18.x] # 使用するNode.jsのバージョン
+        # 必要に応じて他のバージョンも追加可能: [18.x, 20.x]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4 # リポジトリのコードをチェックアウト
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4 # 指定したバージョンのNode.jsをセットアップ
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm' # npmのキャッシュを有効化
+
+    - name: Install dependencies
+      run: npm install # 依存パッケージのインストール
+
+    - name: Run tests
+      run: npm test # Vitest を実行 (package.json の test スクリプト)
+      env:
+        # テスト実行に必要な環境変数があればここで設定
+        # 例: CI環境用のダミーAPIキーなど
+        # GEMINI_API_KEY: ${{ secrets.CI_GEMINI_API_KEY }}
+        NODE_ENV: test
