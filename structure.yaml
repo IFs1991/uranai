@@ -15,6 +15,7 @@ src:
       - バックエンド: Vercel Functions / Node.js
       - 外部API: Google Gemini API（占い生成）、pay.jp API（決済処理）
       - PDF生成: PDFKit（Node.js）
+      - 占星術計算: 独自実装の占星術計算エンジン（将来的にはastronomy-engine、chinese-lunar-calendarへの移行を計画）
 
       パフォーマンス最適化:
       - 総初期ロードサイズ300KB以下
@@ -242,34 +243,38 @@ src:
   api:
     generate-horoscope.js:
       content: |-
-        占い結果生成のサーバーレス関数
+        占い結果生成のサーバーレス関数 (JSON形式)
 
         機能:
-        - クライアントからの占いリクエスト処理
-        - Google Gemini APIとの連携
-        - 西洋占星術と四柱推命の基本データ計算
-        - 特定質問への回答生成
-        - 結果整形と返却
+        - クライアントからの占いリクエスト処理（基本鑑定＋特定質問）
+        - astrology.js, four-pillars.js を使用した占術データ計算
+        - gemini-api.js を使用した鑑定文生成
+        - 結果整形とJSON形式での返却
+        - メモリキャッシュによる応答高速化
 
         実装詳細:
         - Vercel Serverless Function / API Route
-        - Google Gemini APIへのリクエスト構築
-        - 生年月日時からの西洋占星術データ計算（太陽星座、月星座、アセンダント）
-        - 生年月日時からの四柱推命データ計算（日主、命式の五行バランス）
-        - 特定質問のプロンプト拡張処理
+        - 入力（生年月日、時刻、場所）を Date オブジェクトに変換
+        - astrology.js の `generateHoroscopeChart` を呼び出し
+        - four-pillars.js の `FourPillars` クラスをインスタンス化し、`getFullChart` を呼び出し
+        - 計算結果を整形し、Gemini API用プロンプト (`createBasePrompt`, `createSpecificQuestionPrompt`) を生成
+        - gemini-api.js の `retryWithBackoff` と `generateGeminiResponse` を使用してAPI呼び出し
+        - 計算結果とAPI応答を統合し、構造化されたJSONレスポンス (`finalResponse`) を構築
+        - レスポンスをインメモリキャッシュ (`responseCache`) に保存
 
         最適化ポイント:
-        - 計算ロジックの最適化（計算量削減）
-        - Gemini APIプロンプトの最適化（トークン数削減）
-        - 類似パターンのメモリキャッシュ
-        - 並列リクエスト処理
-        - エラーハンドリングとリトライロジック
+        - 占術計算とAPIリクエストの並列処理
+        - Gemini APIプロンプトの最適化
+        - リクエスト単位でのメモリキャッシュ（キー: 入力情報）
+        - API呼び出し時の指数バックオフ付きリトライ
+        - 詳細なエラーハンドリングとログ出力
+        - 不要なデータを含まないようレスポンス構造を最適化
       dependency:
-        - src/lib/gemini-api.js
-        - src/lib/astrology.js
-        - src/lib/four-pillars.js
+        - src/lib/gemini-api.js # generateGeminiResponse, retryWithBackoff 使用
+        - src/lib/astrology.js # generateHoroscopeChart 使用
+        - src/lib/four-pillars.js # FourPillars クラス使用
       agent: "claude-3-7-sonnet-20250219" # Updated
-      api: ["gemini-pro"]
+      api: ["gemini-pro"] # Gemini APIを使用
 
     process-payment.js:
       content: |-
@@ -338,23 +343,26 @@ src:
         Google Gemini API連携ライブラリ
 
         機能:
-        - Gemini APIへのリクエスト作成・送信
-        - プロンプトテンプレート管理
-        - レスポンス解析
-        - エラーハンドリングとリトライロジック
+        - Gemini APIクライアントの初期化と管理
+        - 汎用的なプロンプト応答生成 (`generateGeminiResponse`)
+        - 指数バックオフ付きリトライ処理 (`retryWithBackoff`)
+        - 日別占い生成 (`generateDailyHoroscopes`)
+        - 詳細鑑定文生成 (`generateComprehensiveReading`) ※PDF生成用
+        - エラー時のフォールバック占い生成 (`generateFallbackHoroscopes`)
+        - API応答の基本的な解析（JSON抽出）
 
         実装詳細:
-        - API認証と接続管理
-        - 占い生成用プロンプトテンプレート
-        - 365日占い生成の分割バッチ処理
-        - レスポンスの構造化と整形
-        - エラー発生時のバックオフ戦略
+        - APIキーの環境変数からの読み込み
+        - `GoogleGenerativeAI` SDKの使用
+        - 各種占い生成用のプロンプトテンプレート管理（各関数内）
+        - API呼び出し時のエラーハンドリングとログ出力
+        - 汎用関数と特定用途関数をエクスポート
 
         最適化ポイント:
-        - プロンプト最適化（トークン数削減）
-        - 並列リクエスト制御（レート制限対応）
-        - 類似リクエストのキャッシュ
-        - エラー分離（単一失敗が全体に影響しない設計）
+        - APIクライアントのシングルトン管理 (`initializeGemini`)
+        - プロンプト最適化（各関数内での工夫）
+        - リトライロジックによるAPIエラー耐性向上
+        - 応答解析の共通化
       dependency: []
       agent: "claude-3-7-sonnet-20250219" # Updated
       api: ["gemini-pro"]
@@ -370,15 +378,16 @@ src:
         - 占星術チャート生成のためのデータ準備
 
         実装詳細:
-        - 天文学的計算アルゴリズム
-        - 座標変換処理
-        - 時差補正
-        - 星座・惑星の解釈データ
+        - 独自実装の天文学的計算アルゴリズム
+        - ユリウス日計算と座標変換処理
+        - 惑星位置・アスペクト・ハウスの計算ロジック
+        - 効率的なメモ化キャッシュシステム
+        - 星座・惑星の解釈データテーブル
 
         最適化ポイント:
         - 計算の正確性と効率性のバランス
         - メモリ使用量の最適化
-        - 計算結果のキャッシュ
+        - 計算結果のキャッシュ（Map実装）
         - 必要な計算のみを実行（不要な惑星計算をスキップ）
       dependency: []
       agent: "claude-3-7-sonnet-20250219" # Updated
@@ -395,16 +404,16 @@ src:
         - 大運・年運の算出
 
         実装詳細:
-        - 干支変換アルゴリズム
-        - 十干・十二支の組み合わせ処理
-        - 蔵干の計算
-        - 五行の相生相剋関係計算
-        - 通変星システムの実装
+        - 干支・五行の対応テーブル
+        - 天干・地支・蔵干の計算アルゴリズム
+        - 相生相剋関係の計算
+        - 通変星システムの完全実装
+        - メモ化によるキャッシュ最適化
 
         最適化ポイント:
         - ルックアップテーブルの活用による計算量削減
         - メモリ使用量の最適化
-        - 計算結果のキャッシュ
+        - 計算結果のキャッシュ（Map実装）
         - 必要な計算のみを実行
       dependency: []
       agent: "claude-3-7-sonnet-20250219" # Updated
