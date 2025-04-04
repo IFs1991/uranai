@@ -25,7 +25,6 @@ jobs:
       uses: actions/setup-node@v4 # 指定したバージョンのNode.jsをセットアップ
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm' # npmのキャッシュを有効化
 
     - name: Install dependencies
       run: npm install # 依存パッケージのインストール
