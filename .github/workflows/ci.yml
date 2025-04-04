@@ -9,7 +9,7 @@ on:
     branches: [ master ]  # master ブランチへのプルリクエスト時に実行
 
 jobs:
-  test-without-cache:  # job名を変更
+  build-and-test:
     runs-on: ubuntu-latest # 実行環境 (Linux)
 
     strategy:

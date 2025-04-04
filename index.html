@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="ライフサイクル・ポテンシャル占術 - 西洋占星術と四柱推命を融合したAI占いサービス。あなたの本質と可能性を読み解きます。">
-    <title>ライフサイクル・ポテンシャル占術 | 人生の可能性を読み解く</title>
-    
+    <meta name="description" content="AIが西洋占星術と四柱推命を統合分析。ライフサイクル・ポテンシャル占術で、あなたの性格特性、才能、運勢サイクル、人生の転機を精密に鑑定します。無料鑑定で可能性を発見しませんか？">
+    <title>ライフサイクル・ポテンシャル占術 | AIが読み解くあなたの人生</title>
+
     <!-- Preconnect/Preload 重要リソース -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" href="styles/main.css" as="style">
-    
+
     <!-- インラインCSS (Critical CSS) -->
     <style>
         :root {
@@ -21,13 +21,13 @@
             --card-bg: rgba(25, 25, 112, 0.7);
             --highlight-bg: rgba(255, 255, 255, 0.08);
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             line-height: 1.6;
@@ -38,21 +38,21 @@
             margin: 0;
             overflow-x: hidden;
         }
-        
+
         .container {
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         .header {
             text-align: center;
             padding: 40px 0 30px;
             position: relative;
             overflow: hidden;
         }
-        
+
         .header::before {
             content: '';
             position: absolute;
@@ -63,7 +63,7 @@
             background: radial-gradient(circle at center, rgba(255,215,0,0.15) 0%, transparent 70%);
             z-index: -1;
         }
-        
+
         .site-title {
             font-size: 2.2rem;
             margin-bottom: 0.5rem;
@@ -72,14 +72,14 @@
             letter-spacing: 1px;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
-        
+
         .site-subtitle {
             font-size: 1.1rem;
             margin-bottom: 1.5rem;
             color: var(--tertiary-color);
             font-weight: 400;
         }
-        
+
         .card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -89,24 +89,24 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         h2 {
             font-size: 1.5rem;
             margin-bottom: 1rem;
             color: var(--secondary-color);
             font-weight: 600;
         }
-        
+
         .form-group {
             margin-bottom: 1.2rem;
         }
-        
+
         label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
         }
-        
+
         input, select, textarea {
             width: 100%;
             padding: 12px;
@@ -117,13 +117,13 @@
             font-size: 1rem;
             transition: all 0.3s ease;
         }
-        
+
         input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--secondary-color);
             box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
         }
-        
+
         button {
             background: linear-gradient(135deg, var(--main-color) 0%, var(--tertiary-color) 100%);
             color: var(--text-color);
@@ -137,29 +137,29 @@
             width: 100%;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
         }
-        
+
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
             background: linear-gradient(135deg, var(--tertiary-color) 0%, var(--main-color) 100%);
         }
-        
+
         .result-area {
             display: none;
         }
-        
+
         .premium-card {
             background: linear-gradient(135deg, rgba(72, 61, 139, 0.8) 0%, rgba(147, 112, 219, 0.8) 100%);
             border: 1px solid var(--secondary-color);
         }
-        
+
         .premium-title {
             font-size: 1.8rem;
             color: var(--secondary-color);
             text-align: center;
             margin-bottom: 1rem;
         }
-        
+
         .footer {
             text-align: center;
             padding: 30px 0;
@@ -168,50 +168,101 @@
             color: rgba(248, 248, 255, 0.7);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
-        
+
         .footer a {
             color: var(--tertiary-color);
             text-decoration: none;
         }
-        
+
         .loading {
             display: none;
             text-align: center;
             padding: 20px;
         }
-        
+
         @media (max-width: 600px) {
             .container {
                 padding: 15px;
             }
-            
+
             .site-title {
                 font-size: 1.8rem;
             }
-            
+
             .card {
                 padding: 20px;
             }
         }
     </style>
-    
+
     <!-- 遅延読み込みCSS -->
     <link rel="stylesheet" href="styles/main.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="styles/main.css"></noscript>
+
+    <!-- 構造化データ (Schema.org) の推奨 -->
+    <!--
+    AI Overview や検索エンジンがサービス内容を正確に理解するために、
+    JSON-LD形式などで Service や Product のスキーママークアップを追加することを推奨します。
+    例:
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "serviceType": "占術鑑定",
+      "provider": {
+        "@type": "Organization",
+        "name": "ライフサイクル・ポテンシャル占術"
+      },
+      "name": "ライフサイクル・ポテンシャル占術",
+      "description": "AIが西洋占星術と四柱推命を統合分析し、性格、才能、運勢、転機などを精密に鑑定するサービス。",
+      "offers": [
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "無料鑑定"
+          },
+          "price": "0",
+          "priceCurrency": "JPY"
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": {
+            "@type": "Service",
+            "name": "プレミアム鑑定"
+          },
+          "price": "2000",
+          "priceCurrency": "JPY"
+        }
+      ],
+      // ... その他関連情報 (areaServed など)
+    }
+    </script>
+    -->
 </head>
 <body>
     <div class="container">
         <header class="header">
             <h1 class="site-title">ライフサイクル・ポテンシャル占術</h1>
-            <p class="site-subtitle">西洋占星術と四柱推命の叡智をAIが融合。あなたの人生の秘密を解き明かします。</p>
+            <p class="site-subtitle">AIが西洋占星術と四柱推命を融合。あなたの個性、才能、運命の転機を明らかにします。</p>
         </header>
-        
+
         <section class="card">
-            <h2>占術について</h2>
-            <p>当サービスは西洋占星術と四柱推命、この二つの偉大な占術体系を最新のAI技術で融合させた独自の占術です。</p>
-            <p>西洋占星術はあなたの個性や潜在能力を示し、四柱推命は人生の流れやタイミングを読み解きます。この両方を組み合わせることで、これまでにない深い洞察と正確な未来予測を提供します。</p>
+            <h2>占術について - AIと伝統の融合</h2>
+            <p>当サービスは、古来より伝わる西洋占星術と四柱推命、二つの深遠な占術体系を、最新のAI技術（独自の分析アルゴリズム）を用いて統合した、新しい形の占術です。単一の占術では見えにくい、多角的な視点からの分析を可能にしました。</p>
+            <p><strong>西洋占星術</strong>は、生年月日時の天体の配置から、あなたの生まれ持った個性、才能、潜在的な可能性、心理的傾向などを明らかにします。一方、<strong>四柱推命</strong>は、生年月日時を干支暦に変換し、人生全体のエネルギーの流れ、運気の波、重要な転機、対人関係の傾向などを読み解きます。</p>
+            <p>ライフサイクル・ポテンシャル占術では、AIが両占術の膨大なデータ（惑星配置、干支、五行など）と数百万パターンの運勢モデルを解析。それぞれの占術が示す情報を客観的に組み合わせ、単なる結果の足し合わせではなく、より深く、パーソナライズされた洞察を提供します。これにより、あなたの本質、人生のテーマ、そして未来の可能性について、従来にない精度での理解を目指します。</p>
+            <p><strong>鑑定でわかることの例:</strong></p>
+            <ul>
+                <li>あなたの基本的な性格と隠れた才能</li>
+                <li>仕事運、適職、キャリアパスの可能性</li>
+                <li>恋愛傾向、相性の良いタイプ、結婚の時期</li>
+                <li>金運の流れ、財産形成のヒント</li>
+                <li>注意すべき時期や健康に関するアドバイス</li>
+                <li>人生における重要な転機とその活かし方</li>
+            </ul>
         </section>
-        
+
         <section class="card">
             <h2>あなたの情報を入力</h2>
             <form id="horoscope-form">
@@ -219,68 +270,68 @@
                     <label for="name">お名前</label>
                     <input type="text" id="name" name="name" required placeholder="例: 山田 太郎">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="birthdate">生年月日</label>
                     <input type="date" id="birthdate" name="birthdate" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="birthtime">出生時刻 (わかる場合)</label>
                     <input type="time" id="birthtime" name="birthtime" placeholder="例: 15:30">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="birthplace">出生地</label>
                     <input type="text" id="birthplace" name="birthplace" placeholder="例: 東京都新宿区">
                 </div>
-                
+
                 <div class="form-group">
                     <label for="question">特定の質問（任意）</label>
                     <textarea id="question" name="question" rows="3" placeholder="例: 今年の転職は吉と出るでしょうか？私の適職は？"></textarea>
                 </div>
-                
+
                 <button type="submit" id="free-reading-btn">無料鑑定を実行</button>
             </form>
         </section>
-        
+
         <div class="loading" id="loading">
             <p>星の配置を読み解いています...</p>
             <!-- ローディングアニメーション -->
             <div class="stars-loading"></div>
         </div>
-        
+
         <section class="card result-area" id="result-area">
             <h2>あなたの基本占い結果</h2>
             <div id="basic-result"></div>
-            
+
             <div class="question-result" id="question-result-area">
                 <h3>あなたの質問への回答</h3>
                 <div id="question-result"></div>
             </div>
         </section>
-        
+
         <section class="card premium-card">
             <h2 class="premium-title">詳細鑑定 - プレミアムプラン</h2>
-            <p>より詳しく知りたいあなたへ。プレミアム鑑定では以下が含まれます：</p>
+            <p>無料鑑定で示されたあなたの可能性を、さらに深く掘り下げます。プレミアム鑑定では、無料版の基本分析に加え、以下の詳細な情報を提供します：</p>
             <ul>
-                <li>完全版ライフサイクル・ポテンシャル鑑定書（PDF）</li>
-                <li>3つの運命フレームワークによる分析</li>
-                <li>365日分の日別運勢カレンダー</li>
-                <li>あなたの才能と人生のテーマ詳細解説</li>
-                <li>特定質問への深堀り回答</li>
+                <li><strong>完全版ライフサイクル・ポテンシャル鑑定書（PDF）:</strong> 保存・印刷可能な詳細レポート。</li>
+                <li><strong>3つの運命フレームワークによる多角的分析:</strong> より深いレベルでの自己理解へ。</li>
+                <li><strong>365日分の日別運勢カレンダー:</strong> 日々の行動指針に。</li>
+                <li><strong>あなたの才能と人生のテーマ詳細解説:</strong> 可能性を最大限に活かすために。</li>
+                <li><strong>特定質問への深堀り回答:</strong> あなたの疑問に個別で詳細に答えます。</li>
             </ul>
             <p class="price">価格: <strong>¥2,000</strong> (税込)</p>
             <button type="button" id="premium-btn" disabled>鑑定を購入する</button>
-            <p class="note">※購入前に無料鑑定を行ってください</p>
+            <p class="note">※まずは無料鑑定をお試しください</p>
         </section>
-        
+
         <footer class="footer">
             <p><a href="terms.html">利用規約</a> | <a href="privacy.html">プライバシーポリシー</a></p>
             <p>&copy; 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</p>
         </footer>
     </div>
-    
+
     <!-- JavaScriptの遅延読み込み -->
     <script src="js/app.js" defer></script>
     <script src="js/horoscope.js" defer></script>
