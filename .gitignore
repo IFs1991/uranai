@@ -25,3 +25,10 @@ Thumbs.db
 *.njsproj
 *.sln
 *.swp
+
+# Configuration files (add these if not already ignored)
+structure.yaml
+aioverview.yaml
+
+# Test directory
+/test/
