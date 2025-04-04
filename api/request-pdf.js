@@ -1,14 +1,16 @@
-import { v4 as uuidv4 } from 'uuid'; // Need to install uuid: npm install uuid
+// Use our custom jobId generator instead of uuid library
+// import { v4 as uuidv4 } from 'uuid'; // Need to install uuid: npm install uuid
+import { jobStore, generateJobId } from './jobStore.js';
 import { generateComprehensiveReading, generateDailyHoroscopes } from '../lib/gemini-api.js';
 import { calculateAstrologyData } from '../lib/astrology.js';
 import { calculateFourPillarsData } from '../lib/four-pillars.js';
-import pdfGenerator from '../lib/pdf-generator.js'; // Assuming pdf-generator exports the class instance
+import pdfGenerator from '../lib/pdf-generator.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
 // In-memory store for job progress (replace with a more robust solution for production)
-const jobStore = {};
+// const jobStore = {}; // Removed, now imported from jobStore.js
 
 // Ensure temp directory exists (Vercel specific)
 const ensureTmpDir = async () => {
@@ -28,11 +30,18 @@ async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyH
   const outputPath = path.join(tmpDir, `${jobId}.pdf`);
 
   try {
-    jobStore[jobId] = { status: 'processing', progress: 0, message: 'PDF生成を開始しました' };
+    jobStore[jobId] = {
+      status: 'processing',
+      progress: 0,
+      message: 'PDF生成を開始しました',
+      timestamp: new Date().toISOString(),
+      userData
+    };
 
     const onProgress = (progressData) => {
       console.log(`Job ${jobId} Progress:`, progressData); // Log progress
       jobStore[jobId] = {
+        ...jobStore[jobId], // Keep existing data like timestamp and userData
         status: progressData.error ? 'error' : (progressData.completed ? 'completed' : 'processing'),
         progress: progressData.progress || jobStore[jobId].progress,
         message: progressData.message,
@@ -69,7 +78,6 @@ async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyH
       dailyHoroscopes: dailyHoroscopes
     };
 
-
     await pdfGenerator.generateFullPDF(userData, fullHoroscopeData, { outputPath, onProgress });
 
     // Keep job data for a while after completion for download
@@ -84,7 +92,12 @@ async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyH
 
   } catch (error) {
     console.error(`Error during PDF generation for job ${jobId}:`, error);
-    jobStore[jobId] = { status: 'error', message: `PDF生成中にエラーが発生しました: ${error.message}`, error: error.message };
+    jobStore[jobId] = {
+      ...jobStore[jobId], // Keep existing data
+      status: 'error',
+      message: `PDF生成中にエラーが発生しました: ${error.message}`,
+      error: error.message
+    };
   }
 }
 
@@ -108,8 +121,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    const jobId = uuidv4();
-    jobStore[jobId] = { status: 'pending', progress: 0, message: 'リクエスト受付' };
+    // Generate a unique job ID
+    const jobId = generateJobId();
+    jobStore[jobId] = {
+      status: 'pending',
+      progress: 0,
+      message: 'リクエスト受付',
+      timestamp: new Date().toISOString(),
+      userData: { name, birthDate, birthTime, birthPlace, specificQuestion }
+    };
 
     // Respond immediately with the Job ID and SSE endpoint URL
     res.status(202).json({
@@ -126,30 +146,49 @@ export default async function handler(req, res) {
     const fourPillarsData = calculateFourPillarsData(birthDate, birthTime);
 
     // 2. Generate readings (Can take time)
-     jobStore[jobId] = { status: 'processing', progress: 5, message: '鑑定文生成中...' };
+    jobStore[jobId] = {
+      ...jobStore[jobId],
+      status: 'processing',
+      progress: 5,
+      message: '鑑定文生成中...'
+    };
+
     const horoscopeReading = await generateComprehensiveReading(
       name, birthDate, birthTime, birthPlace, astrologyData, fourPillarsData, specificQuestion
     );
 
-     // 3. Generate daily horoscopes (Can take time, potentially parallelize monthly calls if beneficial)
-     jobStore[jobId] = { status: 'processing', progress: 15, message: '365日占い生成中...' };
-     const monthlyPromises = Array.from({ length: 12 }, (_, month) =>
-       generateDailyHoroscopes(name, birthDate, astrologyData, fourPillarsData, month + 1)
-     );
-     const monthlyResultsArrays = await Promise.all(monthlyPromises);
-     // Flatten the array of arrays into a single array of daily horoscopes
-     const dailyHoroscopes = monthlyResultsArrays.flat();
+    // 3. Generate daily horoscopes (Can take time, potentially parallelize monthly calls if beneficial)
+    jobStore[jobId] = {
+      ...jobStore[jobId],
+      progress: 15,
+      message: '365日占い生成中...'
+    };
 
+    const monthlyPromises = Array.from({ length: 12 }, (_, month) =>
+      generateDailyHoroscopes(name, birthDate, astrologyData, fourPillarsData, month + 1)
+    );
+
+    const monthlyResultsArrays = await Promise.all(monthlyPromises);
+    // Flatten the array of arrays into a single array of daily horoscopes
+    const dailyHoroscopes = monthlyResultsArrays.flat();
 
     // 4. Start PDF generation async
-    generatePdfInBackground(jobId, { name, birthDate, birthTime, birthPlace, specificQuestion }, horoscopeReading, dailyHoroscopes)
-        .catch(err => {
-            // Log error if background generation fails unexpectedly at the top level
-            console.error(`Unhandled error in generatePdfInBackground for job ${jobId}:`, err);
-             if(jobStore[jobId] && jobStore[jobId].status !== 'completed'){
-                 jobStore[jobId] = { status: 'error', message: 'PDF生成バックグラウンド処理で予期せぬエラー。', error: err.message };
-             }
-        });
+    generatePdfInBackground(jobId,
+      { name, birthDate, birthTime, birthPlace, specificQuestion },
+      horoscopeReading,
+      dailyHoroscopes
+    ).catch(err => {
+      // Log error if background generation fails unexpectedly at the top level
+      console.error(`Unhandled error in generatePdfInBackground for job ${jobId}:`, err);
+      if(jobStore[jobId] && jobStore[jobId].status !== 'completed'){
+        jobStore[jobId] = {
+          ...jobStore[jobId],
+          status: 'error',
+          message: 'PDF生成バックグラウンド処理で予期せぬエラー。',
+          error: err.message
+        };
+      }
+    });
     // --- End Background PDF Generation ---
 
   } catch (error) {
@@ -157,7 +196,12 @@ export default async function handler(req, res) {
     // Attempt to inform client if job ID was generated
     const potentialJobId = Object.keys(jobStore).find(id => jobStore[id].status === 'pending');
     if (potentialJobId) {
-         jobStore[potentialJobId] = { status: 'error', message: 'リクエスト処理中にエラーが発生しました。', error: error.message };
+      jobStore[potentialJobId] = {
+        ...jobStore[potentialJobId],
+        status: 'error',
+        message: 'リクエスト処理中にエラーが発生しました。',
+        error: error.message
+      };
     }
     // Send error response if headers not already sent
     if (!res.headersSent) {

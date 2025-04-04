@@ -7,16 +7,16 @@ const TIMEOUT_DURATION = 15000;
 
 /**
  * 決済処理を行うサーバーレス関数
- * 
+ *
  * @param {Object} req - リクエストオブジェクト
  * @param {Object} res - レスポンスオブジェクト
  */
 export default async function handler(req, res) {
   // POSTメソッド以外は許可しない
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Method Not Allowed' 
+    return res.status(405).json({
+      success: false,
+      error: 'Method Not Allowed'
     });
   }
 
@@ -44,8 +44,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // 固定金額の設定（2,000円）
-    const amount = 2000;
+    // 固定金額の設定（10,000円）
+    const amount = 10000;
     const currency = 'jpy';
     const description = 'ライフサイクル・ポテンシャル占術 詳細鑑定PDF';
 
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     if (chargeResult && chargeResult.paid) {
       // トランザクションID生成
       const transactionId = `TRX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // PDF生成をバックグラウンドで開始
       // 注: 実際の実装ではメッセージキューなどを使用することが推奨されます
       try {

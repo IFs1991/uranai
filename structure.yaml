@@ -531,3 +531,77 @@ src:
         dependency: []
         agent: "claude-3-7-sonnet-20250219" # Updated
         api: []
+
+locales:
+  en.json:
+    content: |-
+      English locale file for internationalization.
+      Contains key-value pairs for English translations.
+      Example: {"greeting": "Hello"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  ja.json:
+    content: |-
+      Japanese locale file for internationalization.
+      Contains key-value pairs for Japanese translations.
+      Example: {"greeting": "こんにちは"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  zh.json:
+    content: |-
+      Chinese locale file for internationalization.
+      Contains key-value pairs for Chinese translations.
+      Example: {"greeting": "你好"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  fr.json:
+    content: |-
+      French locale file for internationalization.
+      Contains key-value pairs for French translations.
+      Example: {"greeting": "Bonjour"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  es.json:
+    content: |-
+      Spanish locale file for internationalization.
+      Contains key-value pairs for Spanish translations.
+      Example: {"greeting": "Hola"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  de.json:
+    content: |-
+      German locale file for internationalization.
+      Contains key-value pairs for German translations.
+      Example: {"greeting": "Hallo"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  el.json:
+    content: |-
+      Greek locale file for internationalization.
+      Contains key-value pairs for Greek translations.
+      Example: {"greeting": "Γειά σου"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  it.json:
+    content: |-
+      Italian locale file for internationalization.
+      Contains key-value pairs for Italian translations.
+      Example: {"greeting": "Ciao"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+  ko.json:
+    content: |-
+      Korean locale file for internationalization.
+      Contains key-value pairs for Korean translations.
+      Example: {"greeting": "안녕하세요"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
