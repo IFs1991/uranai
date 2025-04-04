@@ -4,9 +4,9 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ main ] # mainブランチへのpush時に実行
+    branches: [ master ]  # master ブランチへのプッシュ時に実行
   pull_request:
-    branches: [ main ] # mainブランチへのプルリクエスト時にも実行
+    branches: [ master ]  # master ブランチへのプルリクエスト時に実行
 
 jobs:
   build-and-test:
