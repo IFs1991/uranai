@@ -1,16 +1,23 @@
-import { v4 as uuidv4 } from 'uuid'; // Need to install uuid: npm install uuid
+/**
+ * PDF生成APIエンドポイント
+ *
+ * このファイルは以下の機能を持ちます：
+ * 1. PDF生成リクエストの受け付け
+ * 2. 占い結果の生成（Gemini API連携）
+ * 3. PDFのバックグラウンド生成
+ * 4. 生成状況の管理（jobStore使用）
+ */
+
+import { jobStore, generateJobId } from './jobStore.js';
 import { generateComprehensiveReading, generateDailyHoroscopes } from '../lib/gemini-api.js';
 import { calculateAstrologyData } from '../lib/astrology.js';
 import { calculateFourPillarsData } from '../lib/four-pillars.js';
-import pdfGenerator from '../lib/pdf-generator.js'; // Assuming pdf-generator exports the class instance
+import pdfGenerator from '../lib/pdf-generator.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 
-// In-memory store for job progress (replace with a more robust solution for production)
-const jobStore = {};
-
-// Ensure temp directory exists (Vercel specific)
+// 一時ディレクトリの確保（Vercel環境用）
 const ensureTmpDir = async () => {
   const tmpDir = path.join(os.tmpdir(), 'pdf_jobs');
   try {
@@ -22,73 +29,110 @@ const ensureTmpDir = async () => {
   }
 };
 
-// Function to run PDF generation in the background (not truly background in serverless, just async)
+/**
+ * バックグラウンドでPDFを生成する関数
+ * （サーバーレス環境では真の意味でのバックグラウンド処理ではなく、非同期処理）
+ *
+ * @param {string} jobId ジョブID
+ * @param {object} userData ユーザーデータ
+ * @param {object} horoscopeReading 占い結果
+ * @param {array} dailyHoroscopes 日別占い
+ */
 async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyHoroscopes) {
   const tmpDir = await ensureTmpDir();
   const outputPath = path.join(tmpDir, `${jobId}.pdf`);
 
   try {
-    jobStore[jobId] = { status: 'processing', progress: 0, message: 'PDF生成を開始しました' };
-
-    const onProgress = (progressData) => {
-      console.log(`Job ${jobId} Progress:`, progressData); // Log progress
+    // jobStoreにエントリが存在しない場合は初期化（通常はhandlerから呼び出されるので存在するはず）
+    if (!jobStore[jobId]) {
+      console.warn(`Job ${jobId} not found in store when starting background task. Initializing.`);
       jobStore[jobId] = {
+        status: 'processing',
+        progress: 0,
+        message: 'PDF生成を開始しました',
+        timestamp: new Date().toISOString(),
+        userData
+      };
+    } else {
+      // 既存のデータを保持しつつステータスを更新
+      jobStore[jobId] = {
+        ...jobStore[jobId],
+        status: 'processing',
+        progress: 0, // この段階でのプログレスをリセット
+        message: 'PDF生成を開始しました',
+      };
+    }
+
+    // 進捗状況更新コールバック
+    const onProgress = (progressData) => {
+      console.log(`Job ${jobId} Progress:`, progressData);
+      jobStore[jobId] = {
+        ...jobStore[jobId], // タイムスタンプやユーザーデータなどの既存データを保持
         status: progressData.error ? 'error' : (progressData.completed ? 'completed' : 'processing'),
         progress: progressData.progress || jobStore[jobId].progress,
         message: progressData.message,
-        path: progressData.completed ? outputPath : undefined, // Store path only on completion
+        path: progressData.completed ? outputPath : undefined, // 完了時のみパスを保存
         error: progressData.error ? progressData.message : undefined,
       };
     };
 
-    // Combine horoscope data for pdfGenerator
+    // pdfGenerator用に占いデータを整形
     const fullHoroscopeData = {
-      coreEnergy: { // Structure might need adjustment based on actual data
-          sunSign: horoscopeReading.coreEnergy.split('太陽星座: ')[1]?.split(',')[0] || 'N/A', // Example extraction, adjust as needed
-          moonSign: horoscopeReading.coreEnergy.split('月星座: ')[1]?.split(',')[0] || 'N/A',
-          ascendant: horoscopeReading.coreEnergy.split('アセンダント: ')[1]?.split(',')[0] || 'N/A',
-          chartData: horoscopeReading.astrologyChartData, // Assuming Gemini API returns chart data
-          dayMaster: horoscopeReading.coreEnergy.split('日主: ')[1]?.split(',')[0] || 'N/A',
-          fiveElementsBalance: horoscopeReading.coreEnergy.split('五行バランス: ')[1] || 'N/A',
-          fourPillarsData: horoscopeReading.fourPillarsChartData, // Assuming Gemini API returns chart data
-          interpretation: horoscopeReading.coreEnergy
+      coreEnergy: {
+        sunSign: horoscopeReading.coreEnergy.split('太陽星座: ')[1]?.split(',')[0] || 'N/A',
+        moonSign: horoscopeReading.coreEnergy.split('月星座: ')[1]?.split(',')[0] || 'N/A',
+        ascendant: horoscopeReading.coreEnergy.split('アセンダント: ')[1]?.split(',')[0] || 'N/A',
+        chartData: horoscopeReading.astrologyChartData,
+        dayMaster: horoscopeReading.coreEnergy.split('日主: ')[1]?.split(',')[0] || 'N/A',
+        fiveElementsBalance: horoscopeReading.coreEnergy.split('五行バランス: ')[1] || 'N/A',
+        fourPillarsData: horoscopeReading.fourPillarsChartData,
+        interpretation: horoscopeReading.coreEnergy
       },
       talents: {
-          talents: horoscopeReading.lifePurposeDetails?.talents || [], // Adjust based on actual structure
-          lifeTheme: horoscopeReading.lifePurposeDetails?.lifeTheme || horoscopeReading.lifePurpose,
-          challenges: horoscopeReading.lifePurposeDetails?.challenges || []
+        talents: horoscopeReading.lifePurposeDetails?.talents || [],
+        lifeTheme: horoscopeReading.lifePurposeDetails?.lifeTheme || horoscopeReading.lifePurpose,
+        challenges: horoscopeReading.lifePurposeDetails?.challenges || []
       },
       lifeFlow: {
-          lifeCycleData: horoscopeReading.fortuneTimelineDetails?.lifeCycleData || {}, // Adjust based on actual structure
-          currentTrend: horoscopeReading.fortuneTimelineDetails?.currentTrend || horoscopeReading.fortuneTimeline,
-          futureTrend: horoscopeReading.fortuneTimelineDetails?.futureTrend || 'N/A',
-          turningPoints: horoscopeReading.fortuneTimelineDetails?.turningPoints || []
+        lifeCycleData: horoscopeReading.fortuneTimelineDetails?.lifeCycleData || {},
+        currentTrend: horoscopeReading.fortuneTimelineDetails?.currentTrend || horoscopeReading.fortuneTimeline,
+        futureTrend: horoscopeReading.fortuneTimelineDetails?.futureTrend || 'N/A',
+        turningPoints: horoscopeReading.fortuneTimelineDetails?.turningPoints || []
       },
       specialQuestionAnswer: horoscopeReading.specificQuestionAnswer,
       summary: horoscopeReading.summary,
       dailyHoroscopes: dailyHoroscopes
     };
 
-
+    // PDF生成実行
     await pdfGenerator.generateFullPDF(userData, fullHoroscopeData, { outputPath, onProgress });
 
-    // Keep job data for a while after completion for download
+    // 完了したジョブデータを一定時間保持（ダウンロード用）
     setTimeout(() => {
       if (jobStore[jobId] && jobStore[jobId].status === 'completed') {
-          console.log(`Cleaning up job data for ${jobId}`);
-          // Optional: Delete the PDF file after some time
-          // fs.unlink(outputPath).catch(err => console.error(`Error deleting PDF ${outputPath}:`, err));
-          delete jobStore[jobId];
+        console.log(`Cleaning up job data for ${jobId}`);
+        // オプション: 一定時間後にPDFファイルを削除
+        // fs.unlink(outputPath).catch(err => console.error(`Error deleting PDF ${outputPath}:`, err));
+        delete jobStore[jobId];
       }
-    }, 10 * 60 * 1000); // Clean up after 10 minutes
+    }, 10 * 60 * 1000); // 10分後にクリーンアップ
 
   } catch (error) {
     console.error(`Error during PDF generation for job ${jobId}:`, error);
-    jobStore[jobId] = { status: 'error', message: `PDF生成中にエラーが発生しました: ${error.message}`, error: error.message };
+    if (jobStore[jobId]) {
+      jobStore[jobId] = {
+        ...jobStore[jobId], // 既存データを保持
+        status: 'error',
+        message: `PDF生成中にエラーが発生しました: ${error.message}`,
+        error: error.message
+      };
+    }
   }
 }
 
-// API handler to request PDF generation
+/**
+ * PDF生成リクエストを処理するAPIハンドラー
+ */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -101,65 +145,99 @@ export default async function handler(req, res) {
       birthTime,
       birthPlace,
       specificQuestion,
-      paymentId // Assuming paymentId is still relevant for validation/logging
+      paymentId // 決済検証用
     } = req.body;
 
+    // 必須パラメータのチェック
     if (!name || !birthDate || !birthTime || !birthPlace || !paymentId) {
-      return res.status(400).json({ error: 'Missing required parameters' });
+      return res.status(400).json({ error: '必須パラメータが不足しています' });
     }
 
-    const jobId = uuidv4();
-    jobStore[jobId] = { status: 'pending', progress: 0, message: 'リクエスト受付' };
+    // 一意のジョブIDを生成
+    const jobId = generateJobId();
+    jobStore[jobId] = {
+      status: 'pending',
+      progress: 0,
+      message: 'リクエスト受付',
+      timestamp: new Date().toISOString(),
+      userData: { name, birthDate, birthTime, birthPlace, specificQuestion }
+    };
 
-    // Respond immediately with the Job ID and SSE endpoint URL
+    // ジョブIDとSSEエンドポイントURLを即時返却
     res.status(202).json({
       jobId: jobId,
-      progressUrl: `/api/pdf-progress/${jobId}` // URL for the client to connect via SSE
+      progressUrl: `/api/pdf-progress/${jobId}` // クライアントがSSE接続するためのURL
     });
 
-    // --- Start Background PDF Generation ---
-    // Note: In a true serverless environment, this might still be subject to function timeouts.
-    // Consider Vercel Background Functions or external queue/worker for long tasks.
+    // --- バックグラウンドPDF生成開始 ---
+    // 注: 実際のサーバーレス環境では関数タイムアウトの制約を受ける可能性があります。
+    // Vercel Background FunctionsやAWS Step Functionsなどの検討が推奨されます。
 
-    // 1. Calculate base data (Keep this quick)
+    // 1. 基本データの計算（高速処理）
     const astrologyData = calculateAstrologyData(birthDate, birthTime, birthPlace);
     const fourPillarsData = calculateFourPillarsData(birthDate, birthTime);
 
-    // 2. Generate readings (Can take time)
-     jobStore[jobId] = { status: 'processing', progress: 5, message: '鑑定文生成中...' };
+    // 2. 鑑定文生成（時間がかかる処理）
+    jobStore[jobId] = {
+      ...jobStore[jobId],
+      status: 'processing',
+      progress: 5,
+      message: '鑑定文生成中...'
+    };
+
     const horoscopeReading = await generateComprehensiveReading(
       name, birthDate, birthTime, birthPlace, astrologyData, fourPillarsData, specificQuestion
     );
 
-     // 3. Generate daily horoscopes (Can take time, potentially parallelize monthly calls if beneficial)
-     jobStore[jobId] = { status: 'processing', progress: 15, message: '365日占い生成中...' };
-     const monthlyPromises = Array.from({ length: 12 }, (_, month) =>
-       generateDailyHoroscopes(name, birthDate, astrologyData, fourPillarsData, month + 1)
-     );
-     const monthlyResultsArrays = await Promise.all(monthlyPromises);
-     // Flatten the array of arrays into a single array of daily horoscopes
-     const dailyHoroscopes = monthlyResultsArrays.flat();
+    // 3. 365日占い生成（時間がかかる処理、月単位で並列化）
+    jobStore[jobId] = {
+      ...jobStore[jobId],
+      progress: 15,
+      message: '365日占い生成中...'
+    };
 
+    // 12ヶ月分を並列生成
+    const monthlyPromises = Array.from({ length: 12 }, (_, month) =>
+      generateDailyHoroscopes(name, birthDate, astrologyData, fourPillarsData, month + 1)
+    );
 
-    // 4. Start PDF generation async
-    generatePdfInBackground(jobId, { name, birthDate, birthTime, birthPlace, specificQuestion }, horoscopeReading, dailyHoroscopes)
-        .catch(err => {
-            // Log error if background generation fails unexpectedly at the top level
-            console.error(`Unhandled error in generatePdfInBackground for job ${jobId}:`, err);
-             if(jobStore[jobId] && jobStore[jobId].status !== 'completed'){
-                 jobStore[jobId] = { status: 'error', message: 'PDF生成バックグラウンド処理で予期せぬエラー。', error: err.message };
-             }
-        });
-    // --- End Background PDF Generation ---
+    const monthlyResultsArrays = await Promise.all(monthlyPromises);
+    // 月別配列を単一の日別占い配列に平坦化
+    const dailyHoroscopes = monthlyResultsArrays.flat();
+
+    // 4. 非同期でPDF生成開始
+    generatePdfInBackground(
+      jobId,
+      { name, birthDate, birthTime, birthPlace, specificQuestion },
+      horoscopeReading,
+      dailyHoroscopes
+    ).catch(err => {
+      // トップレベルでバックグラウンド生成が予期せず失敗した場合にログ出力
+      console.error(`Unhandled error in generatePdfInBackground for job ${jobId}:`, err);
+      if (jobStore[jobId] && jobStore[jobId].status !== 'completed') {
+        jobStore[jobId] = {
+          ...jobStore[jobId],
+          status: 'error',
+          message: 'PDF生成バックグラウンド処理で予期せぬエラーが発生しました。',
+          error: err.message
+        };
+      }
+    });
+    // --- バックグラウンドPDF生成終了 ---
 
   } catch (error) {
     console.error('Error initiating PDF generation request:', error);
-    // Attempt to inform client if job ID was generated
+    // ジョブIDが生成されていれば、そのジョブのステータスを更新
     const potentialJobId = Object.keys(jobStore).find(id => jobStore[id].status === 'pending');
     if (potentialJobId) {
-         jobStore[potentialJobId] = { status: 'error', message: 'リクエスト処理中にエラーが発生しました。', error: error.message };
+      jobStore[potentialJobId] = {
+        ...jobStore[potentialJobId],
+        status: 'error',
+        message: 'リクエスト処理中にエラーが発生しました。',
+        error: error.message
+      };
     }
-    // Send error response if headers not already sent
+    // ヘッダーがまだ送信されていなければエラーレスポンスを返す
     if (!res.headersSent) {
       res.status(500).json({ error: 'PDF生成リクエストの開始中にエラーが発生しました' });
     }
