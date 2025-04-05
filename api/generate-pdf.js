@@ -13,6 +13,7 @@ import { generateComprehensiveReading, generateDailyHoroscopes } from '../lib/ge
 import { calculateAstrologyData } from '../lib/astrology.js';
 import { calculateFourPillarsData } from '../lib/four-pillars.js';
 import pdfGenerator from '../lib/pdf-generator.js';
+import { emailService } from '../lib/email-service.js';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -34,7 +35,7 @@ const ensureTmpDir = async () => {
  * （サーバーレス環境では真の意味でのバックグラウンド処理ではなく、非同期処理）
  *
  * @param {string} jobId ジョブID
- * @param {object} userData ユーザーデータ
+ * @param {object} userData ユーザーデータ（emailを含む可能性あり）
  * @param {object} horoscopeReading 占い結果
  * @param {array} dailyHoroscopes 日別占い
  */
@@ -107,6 +108,67 @@ async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyH
     // PDF生成実行
     await pdfGenerator.generateFullPDF(userData, fullHoroscopeData, { outputPath, onProgress });
 
+    // PDF生成が完了したことを示す
+    onProgress({ progress: 100, message: 'PDF生成完了', completed: true });
+
+    // --- メール送信処理 --- (userData.email が存在する場合)
+    if (userData.email) {
+        console.log(`Job ${jobId}: PDF generated, attempting to send email to ${userData.email}`);
+        jobStore[jobId] = {
+            ...jobStore[jobId],
+            message: 'PDF生成完了、メール送信準備中...'
+        };
+        try {
+            const pdfContent = await fs.readFile(outputPath, { encoding: 'base64' });
+            const fileName = `${userData.name}_${new Date(userData.birthDate).toISOString().split('T')[0]}_占い鑑定書.pdf`;
+
+            await emailService.sendPdfEmail({
+                to: userData.email,
+                subject: `${userData.name}様の占い鑑定書が完成しました`,
+                text: `${userData.name}様
+
+お待たせいたしました。ご依頼いただいた占い鑑定書のPDFファイルが完成しました。
+添付ファイルをご確認ください。
+
+${specificQuestion ? `【ご質問内容】\n${specificQuestion}\n\n【回答の概要】\n${horoscopeReading.specificQuestionAnswer || '鑑定書内をご参照ください'}\n\n` : ''}詳細は鑑定書をご覧ください。
+
+ご利用ありがとうございました。`,
+                html: `<p>${userData.name}様</p>
+<p>お待たせいたしました。ご依頼いただいた占い鑑定書のPDFファイルが完成しました。<br>
+添付ファイルをご確認ください。</p>
+${specificQuestion ? `<p><strong>【ご質問内容】</strong><br>${specificQuestion.replace(/\n/g, '<br>')}</p><p><strong>【回答の概要】</strong><br>${(horoscopeReading.specificQuestionAnswer || '鑑定書内をご参照ください').replace(/\n/g, '<br>')}</p><br>` : ''}
+<p>詳細は鑑定書をご覧ください。</p>
+<p>ご利用ありがとうございました。</p>`,
+                pdfInfo: {
+                    content: pdfContent, // Base64コンテンツ
+                    fileName: fileName
+                }
+            });
+
+            console.log(`Job ${jobId}: Email successfully sent to ${userData.email}`);
+            jobStore[jobId] = {
+                ...jobStore[jobId],
+                message: 'PDF生成完了、メール送信済み'
+            };
+        } catch (emailError) {
+            console.error(`Job ${jobId}: Failed to send email to ${userData.email}`, emailError);
+            // メール送信失敗はジョブ全体のエラーとはしないが、メッセージには残す
+            jobStore[jobId] = {
+                ...jobStore[jobId],
+                status: 'completed', // PDF自体は生成されているので完了扱い
+                message: `PDF生成完了、しかしメール送信に失敗しました: ${emailError.message}`,
+                error: `Email Error: ${emailError.message}` // エラー詳細も記録
+            };
+        }
+    } else {
+         console.log(`Job ${jobId}: PDF generated, no email provided.`);
+         jobStore[jobId] = {
+             ...jobStore[jobId],
+             message: 'PDF生成完了（メールアドレス未指定）'
+         };
+    }
+    // --- メール送信処理ここまで ---
+
     // 完了したジョブデータを一定時間保持（ダウンロード用）
     setTimeout(() => {
       if (jobStore[jobId] && jobStore[jobId].status === 'completed') {
@@ -145,6 +207,7 @@ export default async function handler(req, res) {
       birthTime,
       birthPlace,
       specificQuestion,
+      email,
       paymentId // 決済検証用
     } = req.body;
 
@@ -160,7 +223,7 @@ export default async function handler(req, res) {
       progress: 0,
       message: 'リクエスト受付',
       timestamp: new Date().toISOString(),
-      userData: { name, birthDate, birthTime, birthPlace, specificQuestion }
+      userData: { name, birthDate, birthTime, birthPlace, specificQuestion, email }
     };
 
     // ジョブIDとSSEエンドポイントURLを即時返却
@@ -208,7 +271,7 @@ export default async function handler(req, res) {
     // 4. 非同期でPDF生成開始
     generatePdfInBackground(
       jobId,
-      { name, birthDate, birthTime, birthPlace, specificQuestion },
+      { name, birthDate, birthTime, birthPlace, specificQuestion, email },
       horoscopeReading,
       dailyHoroscopes
     ).catch(err => {

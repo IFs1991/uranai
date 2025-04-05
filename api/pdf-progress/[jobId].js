@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     // Get current job status
     const currentJob = jobStore[jobId];
 
-    // If job no longer exists or has an error/completed status, end the stream
+    // If job no longer exists or has an error status, end the stream
     if (!currentJob) {
       res.write(`data: ${JSON.stringify({
         type: 'error',
@@ -76,11 +76,15 @@ export default async function handler(req, res) {
       // If job is completed or has an error, end the connection
       if (currentJob.status === 'completed' || currentJob.status === 'error') {
         // Send one more message with download URL if completed
-        if (currentJob.status === 'completed' && currentJob.path) {
+        if (currentJob.status === 'completed') {
+          const downloadUrl = currentJob.blobUrl || `/api/download-pdf/${jobId}`;
+
           res.write(`data: ${JSON.stringify({
             type: 'completed',
             message: 'PDF生成が完了しました',
-            downloadUrl: `/api/download-pdf/${jobId}`,
+            downloadUrl: downloadUrl,
+            blobUrl: currentJob.blobUrl, // Vercel Blob URL
+            emailSent: !!currentJob.emailSent, // メール送信状態
             timestamp: new Date().toISOString()
           })}\n\n`);
         }

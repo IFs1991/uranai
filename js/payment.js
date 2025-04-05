@@ -1,4 +1,4 @@
-// payment.js - 決済処理を制御するJavaScript
+// payment.js - 決済処理を制御するJavaScript - メール送信オプション追加版
 
 // 依存モジュール（遅延読み込み）
 let utils = null;
@@ -16,6 +16,7 @@ const PaymentController = (function() {
   let isProcessing = false;
   let userFormData = null;
   let horoscopeData = null;
+  let emailSendOption = true; // デフォルトでメール送信オプションを有効に
 
   // プライベート関数
   const loadDependencies = async () => {
@@ -70,6 +71,18 @@ const PaymentController = (function() {
           </div>
           <form id="payment-form" class="payment-form">
             <div class="form-row">
+              <label for="email-input">メールアドレス (PDF送信用・任意)</label>
+              <input type="email" id="email-input" class="form-input" placeholder="example@mail.com">
+              <div class="payment-error email-error"></div>
+            </div>
+            <div class="form-row email-options">
+              <label class="checkbox-container">
+                <input type="checkbox" id="send-email-checkbox" checked>
+                <span class="checkbox-text">完成したPDFをメールで受け取る</span>
+              </label>
+              <p class="email-info">※メールアドレスを入力するとPDFが添付されたメールが送信されます。また30日間はブラウザからもダウンロード可能です。</p>
+            </div>
+            <div class="form-row">
               <label for="card-number">カード番号</label>
               <div id="card-number" class="payjp-element"></div>
               <div class="payment-error card-number-error"></div>
@@ -114,6 +127,7 @@ const PaymentController = (function() {
     const closeButton = paymentModal.querySelector('.payment-modal-close');
     const overlay = paymentModal.querySelector('.payment-modal-overlay');
     const form = paymentModal.querySelector('#payment-form');
+    const emailCheckbox = paymentModal.querySelector('#send-email-checkbox');
 
     closeButton.addEventListener('click', () => {
       if (!isProcessing) hidePaymentModal();
@@ -125,6 +139,11 @@ const PaymentController = (function() {
 
     form.addEventListener('submit', handlePaymentSubmit);
 
+    // メール送信チェックボックスの状態を監視
+    emailCheckbox.addEventListener('change', () => {
+      emailSendOption = emailCheckbox.checked;
+    });
+
     return paymentModal;
   };
 
@@ -132,6 +151,12 @@ const PaymentController = (function() {
     const modal = createPaymentModal();
     modal.classList.add('active');
     document.body.classList.add('modal-open');
+
+    // ユーザーデータからメールアドレスを設定（入力済みの場合）
+    const emailInput = modal.querySelector('#email-input');
+    if (emailInput && userFormData && userFormData.email) {
+      emailInput.value = userFormData.email;
+    }
 
     setupPaymentForm();
   };
@@ -273,6 +298,16 @@ const PaymentController = (function() {
       el.textContent = '';
     });
 
+    // メールアドレス取得
+    const emailInput = paymentModal.querySelector('#email-input');
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    // メール送信にチェックがあるが、メールアドレスが入力されていない場合はエラー
+    if (emailSendOption && !email) {
+      showError('email-error', 'メール送信を有効にする場合はメールアドレスを入力してください');
+      return;
+    }
+
     setPaymentProcessing(true);
 
     try {
@@ -283,21 +318,22 @@ const PaymentController = (function() {
         throw new Error(tokenResult.error.message);
       }
 
-      // 必須のユーザー情報の確認
-      if (!userFormData || !userFormData.name || !userFormData.email || !userFormData.birthDate) {
-        throw new Error('ユーザー情報が不完全です。入力内容をご確認ください。');
-      }
+      // ユーザー情報を更新（メールアドレスを追加）
+      const updatedUserData = {
+        ...userFormData,
+        email: email
+      };
 
       // サーバーへ決済リクエスト送信 (金額は固定10,000円)
       const paymentResult = await processPayment({
         token: tokenResult.id,
-        userData: userFormData
+        userData: updatedUserData
       });
 
       // 決済成功
       if (paymentResult.success) {
         // PDF生成を開始
-        startPdfGeneration(paymentResult.paymentId);
+        startPdfGeneration(paymentResult.paymentId, email, emailSendOption);
       } else {
         throw new Error(paymentResult.error || '決済処理に失敗しました');
       }
@@ -328,7 +364,7 @@ const PaymentController = (function() {
     }
   };
 
-  const startPdfGeneration = async (paymentId) => {
+  const startPdfGeneration = async (paymentId, email, sendEmail) => {
     try {
       // PDF生成画面へ移行
       hidePaymentModal();
@@ -337,12 +373,16 @@ const PaymentController = (function() {
       // PDF生成リクエスト
       const pdfResult = await generatePdf({
         paymentId,
-        userData: userFormData,
-        horoscopeData: horoscopeData
+        userData: {
+          ...userFormData,
+          email
+        },
+        horoscopeData: horoscopeData,
+        sendEmail
       });
 
       if (pdfResult.success) {
-        completePdfGeneration(pdfResult.pdfUrl);
+        completePdfGeneration(pdfResult.pdfUrl, sendEmail);
       } else {
         throw new Error(pdfResult.message || 'PDF生成に失敗しました');
       }
@@ -411,7 +451,7 @@ const PaymentController = (function() {
     updateProgress();
   };
 
-  const completePdfGeneration = (pdfUrl) => {
+  const completePdfGeneration = (pdfUrl, emailSent) => {
     const progressContainer = document.getElementById('pdf-progress-container');
     if (progressContainer) {
       progressContainer.innerHTML = `
@@ -422,7 +462,12 @@ const PaymentController = (function() {
           <a href="${pdfUrl}" download="lifecycle_potential_horoscope.pdf" class="download-pdf-button">
             鑑定書をダウンロード
           </a>
-          <p class="pdf-note">このリンクは24時間有効です。ダウンロードしてお使いのデバイスに保存してください。</p>
+          ${emailSent ? `
+          <p class="pdf-note">
+            <strong>メール送信完了:</strong> 入力いただいたメールアドレスに鑑定書を添付したメールをお送りしました。<br>
+            メールが届かない場合は、迷惑メールフォルダをご確認ください。
+          </p>` : ''}
+          <p class="pdf-note">このPDFへのアクセスは30日間有効です。ダウンロードしてお使いのデバイスに保存してください。</p>
           <button class="close-button">閉じる</button>
         </div>
       `;
@@ -490,7 +535,7 @@ const PaymentController = (function() {
       horoscopeData = resultData;
 
       // ダミーのpaymentIdでPDF生成を開始
-      startPdfGeneration('debug_payment_id');
+      startPdfGeneration('debug_payment_id', formData.email, true);
     }
   };
 })();
