@@ -1,0 +1,147 @@
+        /* SVG表示用モーダルスタイル */
+        #svg-modal .modal-content {
+            max-width: 90%; /* SVGの幅に合わせて調整 */
+            width: 850px; /* SVGの基本幅に合わせる */
+            max-height: 90vh; /* 高さを制限 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        #svg-modal .modal-body {
+            flex-grow: 1; /* 残りの高さをbodyが取るように */
+            overflow: hidden; /* body自体のスクロールは不要 */
+            padding: 10px; /* SVGコンテナとの間に少し余白 */
+        }
+
+        #svg-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* SVGが大きい場合にスクロール */
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+            display: flex; /* 中央揃えのため */
+            justify-content: center;
+            align-items: center;
+        }
+
+        #sample-svg-object {
+            max-width: 100%;
+            max-height: 100%;
+            height: auto;
+            display: block; /* 余計なスペースを防ぐ */
+        }
+
+        /* 汎用モーダルスタイル */
+        .modal {
+            display: none; /* 初期状態は非表示 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex; /* アクティブ時に表示 */
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+            cursor: pointer;
+        }
+
+        .modal-content {
+            position: relative;
+            background: linear-gradient(135deg, #1F1F42 0%, #2A2A5A 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+            z-index: 1001;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, var(--main-color) 0%, #2D2D62 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--secondary-color);
+            font-size: 1.3rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            line-height: 1;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 0 5px;
+            width: auto;
+            box-shadow: none;
+        }
+
+        .modal-close:hover {
+            color: var(--text-color);
+            transform: none;
+            box-shadow: none;
+            background: none;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px) scale(0.98);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* セカンダリボタンのスタイル */
+        .secondary-button {
+            background: transparent;
+            color: var(--tertiary-color);
+            border: 1px solid var(--tertiary-color);
+            border-radius: 6px;
+            padding: 12px 20px; /* プライマリより少し小さめ */
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 15px; /* 他の要素との間隔 */
+        }
+
+        .secondary-button:hover {
+            background: rgba(147, 112, 219, 0.1);
+            color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        /* PDF生成プログレス関連のスタイル */
+        #pdf-progress-container {
+// ... existing code ...
+        }
+    }

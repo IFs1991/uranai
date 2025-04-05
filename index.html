@@ -704,12 +704,30 @@
             <p class="price">価格: <strong>¥10,000</strong> (税込)</p>
             <button type="button" id="premium-purchase-button" disabled>鑑定を購入する</button>
             <p class="note">※まずは無料鑑定をお試しください</p>
+            <button type="button" id="show-sample-pdf-btn" class="secondary-button">鑑定書サンプルを見る</button>
         </section>
 
         <footer class="footer">
             <p><a href="terms.html">利用規約</a> | <a href="privacy.html">プライバシーポリシー</a> | <a href="tokushoho.html">特定商取引法に基づく表記</a></p>
             <p>&copy; 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</p>
         </footer>
+    </div>
+
+    <!-- SVG表示用モーダル -->
+    <div id="svg-modal" class="modal">
+        <div class="modal-overlay" data-close-modal></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>鑑定書サンプル</h2>
+                <button class="modal-close" id="close-svg-modal" data-close-modal>&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="svg-container">
+                    <!-- SVGコンテンツはここに読み込まれます -->
+                    <object type="image/svg+xml" data="sample.svg" id="sample-svg-object" aria-label="鑑定書サンプルSVG"></object>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- JavaScriptの遅延読み込み -->
@@ -761,6 +779,56 @@
                 });
             }
         });
+
+        // SVGサンプルモーダル処理
+        const svgModal = document.getElementById('svg-modal');
+        const showSvgButton = document.getElementById('show-sample-pdf-btn');
+        const closeSvgModalElements = document.querySelectorAll('[data-close-modal]');
+
+        if (showSvgButton && svgModal) {
+            showSvgButton.addEventListener('click', () => {
+                svgModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            });
+        }
+
+        closeSvgModalElements.forEach(el => {
+            el.addEventListener('click', () => {
+                if (svgModal) {
+                    svgModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+                // 他のモーダルも閉じる場合はここに追加
+                const paymentModal = document.querySelector('.payment-modal');
+                if (paymentModal && paymentModal.classList.contains('active')) {
+                    paymentModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+                const pdfProgress = document.getElementById('pdf-progress-container');
+                if (pdfProgress && pdfProgress.style.display !== 'none') {
+                    // PDFプログレスは単純に閉じるのではなく、適切な処理が必要かもしれない
+                    // ここでは仮に非表示にする
+                    // pdfProgress.style.display = 'none';
+                }
+            });
+        });
+
+        // Escキーでモーダルを閉じる
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                if (svgModal && svgModal.classList.contains('active')) {
+                    svgModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+                // 他のモーダルも閉じる場合はここに追加
+                const paymentModal = document.querySelector('.payment-modal');
+                if (paymentModal && paymentModal.classList.contains('active')) {
+                     paymentModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            }
+        });
+
     });
     </script>
 </body>
