@@ -20,6 +20,8 @@
             --text-color: #F8F8FF;
             --card-bg: rgba(25, 25, 112, 0.7);
             --highlight-bg: rgba(255, 255, 255, 0.08);
+            --error-color: #ff5252;
+            --success-color: #4CAF50;
         }
 
         * {
@@ -180,6 +182,354 @@
             padding: 20px;
         }
 
+        /* Pay.jp決済モーダル関連のスタイル */
+        .payment-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+        }
+
+        .payment-modal.active {
+            display: block;
+        }
+
+        .payment-modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+        }
+
+        .payment-modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 500px;
+            margin: 30px auto;
+            background: linear-gradient(135deg, #1F1F42 0%, #2A2A5A 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .payment-modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--main-color) 0%, #2D2D62 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .payment-modal-header h2 {
+            margin: 0;
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+        }
+
+        .payment-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+            box-shadow: none;
+        }
+
+        .payment-modal-close:hover {
+            color: var(--text-color);
+            transform: none;
+            box-shadow: none;
+            background: none;
+        }
+
+        .payment-modal-body {
+            padding: 20px;
+        }
+
+        .payment-product-info {
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .payment-product-info h3 {
+            color: var(--tertiary-color);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .payment-price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-top: 10px;
+        }
+
+        .payment-tax {
+            font-size: 0.8rem;
+            font-weight: normal;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .payment-form {
+            margin-top: 20px;
+        }
+
+        .form-row {
+            margin-bottom: 20px;
+        }
+
+        .card-details {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-column {
+            flex: 1;
+        }
+
+        .payjp-element {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .payment-error {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 5px;
+            min-height: 1em;
+        }
+
+        .payment-submit-button {
+            position: relative;
+            padding: 14px;
+            background: linear-gradient(135deg, #6A5ACD 0%, #9370DB 100%);
+            font-weight: bold;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .payment-submit-button:hover {
+            background: linear-gradient(135deg, #9370DB 0%, #6A5ACD 100%);
+            transform: translateY(-2px);
+        }
+
+        .button-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .payment-modal-footer {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .payment-security-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.85rem;
+        }
+
+        .lock-icon {
+            margin-right: 8px;
+            fill: currentColor;
+        }
+
+        /* PDF生成プログレス関連のスタイル */
+        #pdf-progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .pdf-progress-content, .pdf-complete-content, .pdf-error-content {
+            background: linear-gradient(135deg, #1F1F42 0%, #2A2A5A 100%);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .progress-bar-container {
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin: 25px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--tertiary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 5px;
+            width: 0;
+            transition: width 0.5s ease;
+        }
+
+        .progress-stages {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .progress-stages::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.2);
+            z-index: 0;
+            transform: translateY(-50%);
+        }
+
+        .stage {
+            position: relative;
+            background-color: var(--bg-color);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+
+        .stage.active {
+            background-color: var(--tertiary-color);
+            color: var(--text-color);
+            font-weight: bold;
+        }
+
+        .stage.completed {
+            background-color: var(--secondary-color);
+            color: var(--bg-color);
+        }
+
+        .pdf-success-icon, .pdf-error-icon {
+            font-size: 3rem;
+            margin: 20px 0;
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .pdf-success-icon {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .pdf-error-icon {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .download-pdf-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--main-color) 0%, var(--tertiary-color) 100%);
+            color: var(--text-color);
+            padding: 14px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .download-pdf-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, var(--tertiary-color) 0%, var(--main-color) 100%);
+        }
+
+        .pdf-note {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+        }
+
+        .retry-button, .close-button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 10px;
+            font-size: 0.9rem;
+            width: auto;
+            display: inline-block;
+        }
+
+        .retry-button {
+            background: linear-gradient(135deg, var(--main-color) 0%, var(--tertiary-color) 100%);
+        }
+
+        .close-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-color);
+        }
+
+        /* モバイル対応 */
         @media (max-width: 600px) {
             .container {
                 padding: 15px;
@@ -192,6 +542,30 @@
             .card {
                 padding: 20px;
             }
+
+            .card-details {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .payment-modal-content {
+                width: 95%;
+                margin: 10px auto;
+            }
+
+            .progress-stages .stage {
+                font-size: 0.7rem;
+                padding: 3px 5px;
+            }
+
+            .stage:not(.active) {
+                display: none;
+            }
+        }
+
+        /* モーダルオープン時のbodyスタイル */
+        body.modal-open {
+            overflow: hidden;
         }
     </style>
 
@@ -287,6 +661,12 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" name="email" placeholder="例: example@mail.com">
+                    <p class="form-help">※詳細鑑定をご購入の場合にのみ必要です</p>
+                </div>
+
+                <div class="form-group">
                     <label for="question">特定の質問（任意）</label>
                     <textarea id="question" name="question" rows="3" placeholder="例: 今年の転職は吉と出るでしょうか？私の適職は？"></textarea>
                 </div>
@@ -322,7 +702,7 @@
                 <li><strong>特定質問への深堀り回答:</strong> あなたの疑問に個別で詳細に答えます。</li>
             </ul>
             <p class="price">価格: <strong>¥10,000</strong> (税込)</p>
-            <button type="button" id="premium-btn" disabled>鑑定を購入する</button>
+            <button type="button" id="premium-purchase-button" disabled>鑑定を購入する</button>
             <p class="note">※まずは無料鑑定をお試しください</p>
         </section>
 
@@ -336,5 +716,52 @@
     <script src="js/app.js" defer></script>
     <script src="js/horoscope.js" defer></script>
     <script src="js/payment.js" defer></script>
+
+    <script>
+    // アプリ初期化時にPaymentControllerも初期化
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 基本アプリの初期化（app.jsで定義されていると仮定）
+        if (typeof AppController !== 'undefined' && AppController.init) {
+            await AppController.init();
+        }
+
+        // PaymentControllerの初期化（payment.jsからインポート）
+        if (typeof PaymentController !== 'undefined') {
+            await PaymentController.init();
+        }
+
+        // 無料鑑定完了後、プレミアムボタンを有効化する処理
+        const enablePremiumButton = () => {
+            const premiumButton = document.getElementById('premium-purchase-button');
+            if (premiumButton && premiumButton.disabled) {
+                premiumButton.disabled = false;
+                premiumButton.textContent = '詳細鑑定を購入する（¥10,000 税込）';
+            }
+        };
+
+        // 無料鑑定結果表示時にイベントをトリガー
+        document.addEventListener('free-reading-complete', (event) => {
+            const { formData, resultData } = event.detail || {};
+            enablePremiumButton();
+
+            // プレミアムボタンクリック時の処理を設定
+            const premiumButton = document.getElementById('premium-purchase-button');
+            if (premiumButton) {
+                // 既存のイベントリスナーを削除
+                premiumButton.replaceWith(premiumButton.cloneNode(true));
+
+                // 新しいプレミアムボタン要素を取得
+                const newPremiumButton = document.getElementById('premium-purchase-button');
+
+                // 新しいイベントリスナーを設定
+                newPremiumButton.addEventListener('click', () => {
+                    if (typeof PaymentController !== 'undefined') {
+                        PaymentController.showPaymentForm(formData, resultData);
+                    }
+                });
+            }
+        });
+    });
+    </script>
 </body>
 </html>

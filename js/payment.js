@@ -2,12 +2,12 @@
 
 // 依存モジュール（遅延読み込み）
 let utils = null;
-let processPayment = null;
 let generatePdf = null;
 
 const PaymentController = (function() {
   // プライベート変数
-  const PAYJP_PUBLIC_KEY = 'pk_test_dummy_public_key'; // 実際の公開キーに置き換えること
+  // 本番環境では実際の公開キーに置き換えること (pk_live_*)
+  const PAYJP_PUBLIC_KEY = 'pk_test_0383a1b8f91e8a6e3ea0e2a9'; // テスト公開キー
   const PAYJP_SCRIPT_URL = 'https://js.pay.jp/v2/pay.js';
 
   let payjpInstance = null;
@@ -22,14 +22,12 @@ const PaymentController = (function() {
     if (!utils) {
       utils = await import('./utils.js').then(module => module.default);
     }
-    if (!processPayment) {
-      processPayment = await import('../api/process-payment.js').then(module => module.default);
-    }
     if (!generatePdf) {
       generatePdf = await import('../api/generate-pdf.js').then(module => module.default);
     }
   };
 
+  // Pay.jpのJavaScriptライブラリを動的に読み込む
   const loadPayJpSDK = () => {
     return new Promise((resolve, reject) => {
       if (window.Payjp) {
@@ -91,7 +89,9 @@ const PaymentController = (function() {
             <div class="form-row">
               <button type="submit" id="payment-submit" class="payment-submit-button">
                 <span class="button-text">購入する</span>
-                <span class="button-loader hidden"></span>
+                <span class="button-loader hidden">
+                  <span class="spinner"></span>
+                </span>
               </button>
             </div>
             <div class="payment-error general-error"></div>
@@ -238,6 +238,30 @@ const PaymentController = (function() {
     errorElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
+  // 支払い処理用のAPIエンドポイント
+  const processPayment = async (paymentData) => {
+    try {
+      const response = await fetch('/api/process-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(paymentData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || '決済処理に失敗しました');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('決済API呼び出しエラー:', error);
+      throw error;
+    }
+  };
+
   const handlePaymentSubmit = async (event) => {
     event.preventDefault();
 
@@ -259,10 +283,14 @@ const PaymentController = (function() {
         throw new Error(tokenResult.error.message);
       }
 
-      // サーバーへ決済リクエスト送信
+      // 必須のユーザー情報の確認
+      if (!userFormData || !userFormData.name || !userFormData.email || !userFormData.birthDate) {
+        throw new Error('ユーザー情報が不完全です。入力内容をご確認ください。');
+      }
+
+      // サーバーへ決済リクエスト送信 (金額は固定10,000円)
       const paymentResult = await processPayment({
         token: tokenResult.id,
-        amount: 10000,
         userData: userFormData
       });
 
@@ -271,13 +299,32 @@ const PaymentController = (function() {
         // PDF生成を開始
         startPdfGeneration(paymentResult.paymentId);
       } else {
-        throw new Error(paymentResult.message || '決済処理に失敗しました');
+        throw new Error(paymentResult.error || '決済処理に失敗しました');
       }
 
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('決済エラー:', error);
       setPaymentProcessing(false);
-      showError('general-error', error.message || '決済処理中にエラーが発生しました');
+
+      // エラーメッセージの表示
+      let errorMessage = error.message || '決済処理中にエラーが発生しました';
+
+      // カード番号関連のエラーの場合
+      if (errorMessage.includes('カード番号') || errorMessage.includes('card number')) {
+        showError('card-number-error', errorMessage);
+      }
+      // 有効期限関連のエラーの場合
+      else if (errorMessage.includes('有効期限') || errorMessage.includes('expiration')) {
+        showError('card-expiry-error', errorMessage);
+      }
+      // セキュリティコード関連のエラーの場合
+      else if (errorMessage.includes('セキュリティコード') || errorMessage.includes('security code') || errorMessage.includes('CVC')) {
+        showError('card-cvc-error', errorMessage);
+      }
+      // その他の一般的なエラー
+      else {
+        showError('general-error', errorMessage);
+      }
     }
   };
 
@@ -301,7 +348,7 @@ const PaymentController = (function() {
       }
 
     } catch (error) {
-      console.error('PDF generation error:', error);
+      console.error('PDF生成エラー:', error);
       showPdfGenerationError(error.message);
     }
   };

@@ -9,6 +9,7 @@ src:
       - 有料プラン（10,000円）による詳細鑑定PDFと365日占い
       - サーバーレスアーキテクチャによる高速・軽量な実装
       - モバイルファーストで速度重視の設計哲学
+      - Pay.jp APIを使用した安全なクレジットカード決済機能
 
       技術スタック:
       - フロントエンド: 純粋なHTML/CSS/JavaScript（フレームワークなし）
@@ -16,6 +17,7 @@ src:
       - 外部API: Google Gemini API（占い生成）、pay.jp API（決済処理）
       - PDF生成: PDFKit（Node.js）
       - 占星術計算: 独自実装の占星術計算エンジン（将来的にはastronomy-engine、chinese-lunar-calendarへの移行を計画）
+      - テスト: Vitest（ユニットテスト、モック、APIテスト）
 
       パフォーマンス最適化:
       - 総初期ロードサイズ300KB以下
@@ -193,21 +195,24 @@ src:
         - エラーハンドリングとユーザーフィードバック
 
         実装詳細:
-        - pay.jpのJavaScriptSDK遅延読み込み
-        - カード情報のトークン化
-        - 決済フォームUIの構築と表示
-        - バックエンドへの決済リクエスト送信
+        - pay.jpのJavaScriptSDK遅延読み込み (`loadPayJpSDK`)
+        - カード情報のトークン化 (`createCardToken`)
+        - 決済フォームUIの構築と表示 (`setupPaymentForm`)
+        - バックエンドへの決済リクエスト送信 (`handlePaymentSubmit`)
         - 決済完了後のPDF生成プロセス開始
+        - 詳細実装については `pay_jp.yaml` の `frontend` セクションを参照
 
         最適化ポイント:
         - pay.jpのSDKは必要な時点で遅延読み込み
         - 決済処理中の適切なUI表示（ローディング、エラーなど）
         - 決済処理の状態管理と復元メカニズム
         - モバイル最適化（タッチフレンドリーなUI）
+        - カード情報の安全な処理（トークン化）
       dependency:
         - src/js/utils.js
         - src/api/process-payment.js
         - src/api/generate-pdf.js
+        - pay_jp.yaml # 決済実装の仕様参照
       agent: "claude-3-7-sonnet-20250219" # Updated
       api: []
 
@@ -288,10 +293,12 @@ src:
 
         実装詳細:
         - Vercel Serverless Function / API Route
-        - pay.jp APIとの連携
+        - pay.jp APIとの連携（`createCharge`関数を使用）
         - クレジットカードトークンの検証と決済処理
         - 固定金額（10,000円）の課金処理
         - 決済完了ステータスの管理
+        - タイムアウト処理設定（15秒）
+        - 詳細実装については `pay_jp.yaml` の `backend.components.request_handler` セクションを参照
 
         最適化ポイント:
         - コールドスタート対策（依存関係の最小化）
@@ -300,6 +307,7 @@ src:
         - 処理状態の適切な管理
       dependency:
         - src/lib/payjp-api.js
+        - pay_jp.yaml # 決済実装の仕様参照
       agent: "claude-3-7-sonnet-20250219" # Updated
       api: []
 
@@ -483,22 +491,24 @@ src:
         機能:
         - pay.jp決済処理API連携
         - トークン検証
-        - 支払い処理
+        - 支払い処理（`createCharge`関数）
         - 決済結果確認
 
         実装詳細:
-        - APIクライアント
-        - 認証管理
+        - APIクライアント（fetch APIを使用）
+        - 認証管理（Basic認証、環境変数からのシークレットキー読み込み）
         - リクエスト構築
         - レスポンス処理
         - エラーハンドリング
+        - 詳細実装については `pay_jp.yaml` の `backend.components.payment_processing` セクションを参照
 
         最適化ポイント:
         - 軽量な実装（最小限の依存関係）
         - エラー時のリトライ処理
         - タイムアウト管理
         - ステータスの永続化なし（セッションのみの一時管理）
-      dependency: []
+      dependency:
+        - pay_jp.yaml # 決済実装の仕様参照
       agent: "claude-3-7-sonnet-20250219" # Updated
       api: []
 
@@ -630,6 +640,109 @@ locales:
       Korean locale file for internationalization.
       Contains key-value pairs for Korean translations.
       Example: {"greeting": "안녕하세요"}
+    dependency: []
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+
+test:
+  payjp-api.test.js:
+    content: |-
+      pay.jp API連携ライブラリのテスト
+
+      テスト内容:
+      - `createCharge`関数のテスト
+      - 正常な決済リクエストのテスト
+      - APIエラー発生時のハンドリングテスト
+      - ネットワークエラー発生時のハンドリングテスト
+      - 環境変数未設定時のエラーハンドリングテスト
+
+      実装詳細:
+      - Vitestフレームワークを使用
+      - fetchのモック化
+      - 環境変数のモック化
+      - 各シナリオのテストケース実装
+      - 期待値と実際の結果の比較
+
+      テスト実行方法:
+      - `npx vitest test/payjp-api.test.js`
+    dependency:
+      - src/lib/payjp-api.js
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+
+  payment-handler.test.js:
+    content: |-
+      決済処理APIハンドラのテスト
+
+      テスト内容:
+      - HTTPメソッド検証（POSTのみ許可）
+      - トークン未指定時のエラーハンドリング
+      - ユーザーデータ不足時のエラーハンドリング
+      - 正常な決済リクエスト処理
+      - 決済失敗時のエラーハンドリング
+      - タイムアウト発生時のエラーハンドリング
+      - Pay.jp APIエラーのハンドリング
+      - サーバー内部エラーのハンドリング
+
+      実装詳細:
+      - Vitestフレームワークを使用
+      - リクエスト/レスポンスオブジェクトのモック
+      - createCharge関数のモック
+      - タイムアウトシミュレーション
+      - エラーシミュレーション
+
+      テスト実行方法:
+      - `npx vitest test/payment-handler.test.js`
+    dependency:
+      - src/api/process-payment.js
+      - src/lib/payjp-api.js
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+
+  payment-frontend.test.js:
+    content: |-
+      フロントエンド決済処理のテスト
+
+      テスト内容:
+      - PaymentControllerの初期化テスト
+      - 支払いフォーム表示のテスト
+      - 支払い処理の正常系テスト
+      - エラー発生時のハンドリングテスト
+      - Pay.jp SDK読み込みのテスト
+
+      実装詳細:
+      - Vitestフレームワークを使用
+      - DOM操作のモック
+      - フォームイベントのシミュレーション
+      - Pay.jp SDKのモック
+      - fetch APIのモック
+
+      テスト実行方法:
+      - `npx vitest test/payment-frontend.test.js`
+    dependency:
+      - src/js/payment.js
+    agent: "claude-3-7-sonnet-20250219"
+    api: []
+
+  payjp-test-cards.js:
+    content: |-
+      Pay.jpテストカード情報ユーティリティ
+
+      機能:
+      - テスト環境で使用可能なカード情報の提供
+      - 状態別テストカード（正常、CVC不正、期限切れ等）
+      - ブランド別テストカード（Visa、MasterCard、JCB等）
+      - テストカード情報のコンソール出力関数
+
+      実装詳細:
+      - テストカード情報の定数オブジェクト
+      - カード詳細（番号、有効期限、CVC等）
+      - カードの説明（エラー種別など）
+      - プリティプリント機能
+
+      使用方法:
+      - `import { printTestCards } from './test/payjp-test-cards';`
+      - `printTestCards(); // コンソールにテストカード情報を表示`
     dependency: []
     agent: "claude-3-7-sonnet-20250219"
     api: []
