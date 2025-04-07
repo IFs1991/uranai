@@ -651,23 +651,25 @@ test:
       pay.jp API連携ライブラリのテスト
 
       テスト内容:
-      - `createCharge`関数のテスト
-      - 正常な決済リクエストのテスト
-      - APIエラー発生時のハンドリングテスト
+      - `createCharge`関数の正常系テスト（有効なカード情報での決済処理）
+      - カードエラー発生時のハンドリングテスト（カード拒否、有効期限切れ等）
+      - 与信枠超過エラーのハンドリングテスト（閾値を超える金額での決済）
       - ネットワークエラー発生時のハンドリングテスト
       - 環境変数未設定時のエラーハンドリングテスト
 
       実装詳細:
       - Vitestフレームワークを使用
-      - fetchのモック化
+      - payjp-test-cards.jsからテストカード情報をインポート
+      - fetchリクエスト/レスポンスのモック化
       - 環境変数のモック化
-      - 各シナリオのテストケース実装
-      - 期待値と実際の結果の比較
+      - 各エラー状況のシミュレーションと検証
+      - 成功ケース・失敗ケースの両方のテスト
 
       テスト実行方法:
       - `npx vitest test/payjp-api.test.js`
     dependency:
       - src/lib/payjp-api.js
+      - test/payjp-test-cards.js
     agent: "claude-3-7-sonnet-20250219"
     api: []
 
@@ -679,24 +681,26 @@ test:
       - HTTPメソッド検証（POSTのみ許可）
       - トークン未指定時のエラーハンドリング
       - ユーザーデータ不足時のエラーハンドリング
-      - 正常な決済リクエスト処理
-      - 決済失敗時のエラーハンドリング
+      - 正常な決済リクエスト処理（複数ブランドのカードでテスト）
+      - カード決済失敗時のエラーハンドリング（カード拒否、与信枠超過等）
       - タイムアウト発生時のエラーハンドリング
-      - Pay.jp APIエラーのハンドリング
+      - Pay.jp APIからの各種エラーのハンドリング
       - サーバー内部エラーのハンドリング
 
       実装詳細:
       - Vitestフレームワークを使用
       - リクエスト/レスポンスオブジェクトのモック
-      - createCharge関数のモック
-      - タイムアウトシミュレーション
-      - エラーシミュレーション
+      - payjp-test-cards.jsからのテストカード情報の活用
+      - createCharge関数のモック実装とレスポンス設定
+      - タイムアウトシミュレーション（vi.useFakeTimers使用）
+      - エラーシミュレーション（特定エラーケースごとのテスト）
 
       テスト実行方法:
       - `npx vitest test/payment-handler.test.js`
     dependency:
       - src/api/process-payment.js
       - src/lib/payjp-api.js
+      - test/payjp-test-cards.js
     agent: "claude-3-7-sonnet-20250219"
     api: []
 
@@ -707,21 +711,24 @@ test:
       テスト内容:
       - PaymentControllerの初期化テスト
       - 支払いフォーム表示のテスト
-      - 支払い処理の正常系テスト
-      - エラー発生時のハンドリングテスト
-      - Pay.jp SDK読み込みのテスト
+      - 正常な支払い処理のテスト（有効なカード情報）
+      - トークン作成時のカードエラー処理テスト（不正CVC、有効期限切れ等）
+      - 決済時のエラー処理テスト（与信枠超過、残高不足等）
+      - Pay.jp SDK読み込みのテスト（成功と失敗）
 
       実装詳細:
       - Vitestフレームワークを使用
-      - DOM操作のモック
-      - フォームイベントのシミュレーション
-      - Pay.jp SDKのモック
-      - fetch APIのモック
+      - payjp-test-cards.jsからのテストカード情報の活用
+      - DOMイベントとフォーム送信のシミュレーション
+      - Pay.jp SDKのモック（elements, createTokenメソッド等）
+      - fetch APIのモック（成功/失敗応答のシミュレーション）
+      - エラー表示とユーザーフィードバックのテスト
 
       テスト実行方法:
       - `npx vitest test/payment-frontend.test.js`
     dependency:
       - src/js/payment.js
+      - test/payjp-test-cards.js
     agent: "claude-3-7-sonnet-20250219"
     api: []
 
@@ -730,20 +737,29 @@ test:
       Pay.jpテストカード情報ユーティリティ
 
       機能:
-      - テスト環境で使用可能なカード情報の提供
-      - 状態別テストカード（正常、CVC不正、期限切れ等）
-      - ブランド別テストカード（Visa、MasterCard、JCB等）
-      - テストカード情報のコンソール出力関数
+      - テスト環境で使用可能なカード情報を以下の4カテゴリに分類して提供:
+        1. VALID_TEST_CARDS: トークン作成・決済とも成功するカード
+        2. TOKEN_ERROR_CARDS: トークン作成時にエラーが発生するカード
+        3. PAYMENT_ERROR_CARDS: トークン作成は成功するが決済時にエラーが発生するカード
+        4. SPECIAL_STATUS_CARDS: 特殊なステータスを返すカード
+      - ブランド別テストカード（Visa、MasterCard、JCB、AMEX、Diners）の提供
+      - テストカードの詳細情報（番号、ブランド、有効期限、CVC、エラーコード等）
+      - カード情報をコンソールに表示する機能
+      - ランダムな将来の有効期限を生成する補助関数
 
       実装詳細:
-      - テストカード情報の定数オブジェクト
-      - カード詳細（番号、有効期限、CVC等）
-      - カードの説明（エラー種別など）
-      - プリティプリント機能
+      - 構造化されたカード情報を定数オブジェクトとして定義
+      - カード詳細（番号、有効期限、CVC、ブランド情報）
+      - エラーカードの詳細（エラーコード、エラーメッセージ）
+      - 与信枠テストのための閾値情報
+      - カテゴリ別・ブランド別のカード情報取得関数
+      - 見やすいコンソール出力のためのフォーマット関数
 
       使用方法:
-      - `import { printTestCards } from './test/payjp-test-cards';`
-      - `printTestCards(); // コンソールにテストカード情報を表示`
+      - `import { VALID_TEST_CARDS, TOKEN_ERROR_CARDS, PAYMENT_ERROR_CARDS, printTestCards } from './test/payjp-test-cards';`
+      - `printTestCards(); // すべてのカテゴリのテストカード情報を表示`
+      - `printTestCards('valid'); // 特定カテゴリのテストカード情報のみ表示`
+      - `const expiry = generateRandomFutureExpiry(); // ランダムな将来の有効期限を生成`
     dependency: []
     agent: "claude-3-7-sonnet-20250219"
     api: []

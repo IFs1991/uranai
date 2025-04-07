@@ -1,257 +1,153 @@
-\
-      structure.yaml:
-        content: |-
-          ライフサイクル・ポテンシャル占術サービス - モバイルファースト縦型LP版
+---
+# ライフサイクル・ポテンシャル占術サービス構造定義
+service:
+  name: ライフサイクル・ポテンシャル占術サービス
+  version: 1.0.0
+  description: モバイルファースト縦型LP版占いサービス
 
-          主要機能:
-          - 西洋占星術と四柱推命を統合したAI占いサービス
-          - 無料基本占いと特定質問への回答提供
-          - 有料プラン（10,000円）による詳細鑑定PDFと365日占い
-          - **Vercelプラットフォーム（Functions, Blob, KV）を活用したサーバーレスアーキテクチャ**
-          - モバイルファーストで速度重視の設計哲学
-          - Pay.jp APIを使用した安全なクレジットカード決済機能
-          - **PDF生成完了時のメール通知機能**
-          - **ユーザーごとのPDF履歴確認機能**
+  features:
+    - 西洋占星術と四柱推命を統合したAI占いサービス
+    - 無料基本占いと特定質問への回答提供
+    - 有料プラン（10,000円）による詳細鑑定PDFと365日占い
+    - Vercelプラットフォーム（Functions, Blob, KV）を活用したサーバーレスアーキテクチャ
+    - モバイルファーストで速度重視の設計哲学
+    - Pay.jp APIを使用した安全なクレジットカード決済機能
+    - PDF生成完了時のメール通知機能
+    - ユーザーごとのPDF履歴確認機能
+    - 決済情報のKVストアでの永続管理
 
-          技術スタック:
-          - フロントエンド: 純粋なHTML/CSS/JavaScript（フレームワークなし）
-          - バックエンド: Vercel Functions / Node.js
-          - **ストレージ: Vercel Blob (PDF永続化), Vercel KV (ジョブ状態, ユーザーデータ永続化)**
-          - 外部API: Google Gemini API（占い生成）、pay.jp API（決済処理）
-          - PDF生成: PDFKit（Node.js）
-          - メール送信: SendGrid / Resend (環境変数で切り替え)
-          - 占星術計算: 独自実装の占星術計算エンジン（将来的にはastronomy-engine、chinese-lunar-calendarへの移行を計画）
-          - テスト: Vitest（ユニットテスト、モック、APIテスト）
+  technology_stack:
+    frontend: 純粋なHTML/CSS/JavaScript（フレームワークなし）
+    backend: Vercel Functions / Node.js
+    storage:
+      blob: Vercel Blob (PDF永続化)
+      kv: Vercel KV (ジョブ状態, ユーザーデータ, 決済情報永続化)
+    external_api:
+      - name: Google Gemini API
+        purpose: 占い生成
+      - name: Pay.jp API
+        purpose: 決済処理
+    pdf_generation: PDFKit（Node.js）
+    email_service:
+      providers:
+        - SendGrid
+        - Resend
+      config: 環境変数で切り替え
+    astrology_engine: 独自実装（将来的にはastronomy-engine、chinese-lunar-calendarへの移行を計画）
+    testing: Vitest（ユニットテスト、モック、APIテスト）
 
-          パフォーマンス最適化:
-          - クレジットカード決済フォーム表示・制御
-          - トークン化と決済処理
-          - 決済完了後のPDF生成リクエスト（**メールアドレスを含む**）
-          - エラーハンドリングとユーザーフィードバック
+# 決済システム実装詳細
+payment_system:
+  flow:
+    - クレジットカード決済フォーム表示・制御
+    - pay.jpのJavaScriptSDK遅延読み込み
+    - カード情報のトークン化
+    - 決済処理（サーバーサイド）
+    - 決済情報のKVストアへの保存（30日TTL）
+    - 決済成功後のPDF生成リクエスト自動送信
+    - PDF生成ジョブ進捗管理と通知
+    - エラーハンドリングとユーザーフィードバック
 
-        実装詳細:
-        - pay.jpのJavaScriptSDK遅延読み込み (`loadPayJpSDK`)
-        - カード情報のトークン化 (`createCardToken`)
-        - 決済フォームUIの構築と表示 (`setupPaymentForm`, **メールアドレス入力フィールド追加**)
-        - バックエンドへの決済リクエスト送信 (`handlePaymentSubmit`)
-        - 決済完了後のPDF生成プロセス開始
-        - 詳細実装については `pay_jp.yaml` の `frontend` セクションを参照
-        - Vercel Serverless Function / API Route
-        - 入力（生年月日、時刻、場所）を Date オブジェクトに変換
-        - astrology.js の `generateHoroscopeChart` を呼び出し
-        - four-pillars.js の `FourPillars` クラスをインスタンス化し、`getFullChart` を呼び出し
-        - 計算結果を整形し、Gemini API用プロンプト (`createBasePrompt`, `createSpecificQuestionPrompt`) を生成
-        - gemini-api.js の `retryWithBackoff` と `generateGeminiResponse` を使用してAPI呼び出し
-        - 計算結果とAPI応答を統合し、構造化されたJSONレスポンス (`finalResponse`) を構築
-        - レスポンスをインメモリキャッシュ (`responseCache`) に保存 (※ KVストアへの移行も検討)
+  security:
+    - PCI DSS準拠のpay.jpトークン化による非保持化
+    - HTTPSによる通信暗号化
+    - 適切なCORS設定
+    - 環境変数によるAPIキー管理
 
-        最適化ポイント:
-        - 占術計算とAPIリクエストの並列処理
-        - **PDF生成完了時にメールで通知 (email-service.js 連携)**
-        - **生成されたPDFをVercel Blobに保存 (storage.js 連携)**
-        - **ジョブ状態をVercel KVに永続化 (kv-store.js, jobStore.js 連携)**
+# PDF生成システム
+pdf_generation:
+  implementation:
+    - Vercel Serverless Function（長時間実行用設定）
+    - ジョブID発行と状態管理
+    - KVストアを使用したジョブ状態の永続管理
+    - 計算とAPI呼び出しの並列処理による高速化
+    - PDF生成完了時のメール通知
+    - 生成されたPDFのBlobストアへの保存
 
-        実装詳細:
-        - Vercel Serverless Function（長時間実行用設定）
-        - リクエスト受付時にジョブID発行
-        - **拡張版 jobStore.js による生成状況の永続管理**
-        - 計算とAPI呼び出しの並列処理による高速化
-        - PDFKit使用によるPDF生成
-        - 日別占いの月単位並列生成（12並列）
-        - PDF構成（表紙、導入、3つのフレームワーク、特別質問回答、総括、365日カレンダー）
-        - 視覚的な星座チャートと命式の生成
-        - **メール送信処理の組み込み**
-        - **生成後PDFのBlobストレージへのアップロード**
+  content:
+    - 表紙
+    - 導入部（ユーザーデータ概要）
+    - 3つの占術フレームワーク分析
+    - 特別質問への回答
+    - 総括
+    - 365日カレンダー（日別占い）
 
-        最適化ポイント:
-        - リクエスト受付と生成処理の分離 (非同期処理)
-        - src/lib/astrology.js
-        - src/lib/four-pillars.js
-        - src/lib/pdf-generator.js
-        - src/api/jobStore.js
-        - **src/lib/email-service.js** # メール送信機能
-        - **src/lib/storage.js** # Blobストレージ連携
-        - **src/lib/kv-store.js** # KVストア連携
-      agent: "claude-3-7-sonnet-20250219" # Updated
-      api: ["gemini-pro"]
-
-    jobStore.js:
-      content: |-
-        **拡張版** PDF生成ジョブ管理ライブラリ (**Vercel KV連携**)
-
-        機能:
-        - ジョブIDの生成
-        - **Vercel KVを使用したジョブ状態の永続保存と管理** (`setJob`, `getJob`, `updateJobStatus` など)
-        - ジョブデータの取得、更新、削除
-        - 期限切れジョブのクリーンアップ（KVのTTL機能利用または定期実行）
-
-        実装詳細:
-        - **Vercel KVクライアント (`@vercel/kv`) を使用**
-        - UUIDライクなID生成関数
-        - ジョブデータの構造化（状態、進捗、メッセージ、タイムスタンプ、ユーザーデータ、PDFパス等）
-        - KVストア操作のラッパー関数
-
-        最適化ポイント:
-        - **インメモリから永続化ストレージへの移行による信頼性向上**
-        - KVストアの効率的な利用（適切なキー設計）
-        - エラーハンドリング（KVストア接続エラーなど）
-      dependency:
-        - **src/lib/kv-store.js** # KVストア連携
-      agent: "claude-3-7-sonnet-20250219" # Updated
-      api: []
-
-    pdf-progress/[jobId].js: # 新規ファイル
-      content: |-
-        PDF生成進捗表示API (Server-Sent Events)
-
-        機能:
-        - 指定されたジョブIDの進捗状況をクライアントにリアルタイムで送信
-        - Vercel KVからジョブ状態を定期的にポーリング
-        - 状態変化があればクライアントにSSEメッセージを送信
-        - 完了またはエラー時に接続を閉じる
-
-        実装詳細:
-        - Vercel Serverless Function / API Route (Edge推奨)
-        - リクエストパスから `jobId` を取得
-        - `jobStore.js` (KV連携版) を使用してジョブデータを取得
-        - `response.writeHead` でSSEヘッダーを設定
-        - `setInterval` 等で定期的にジョブ状態を確認
-        - `response.write` で `event: progress\ndata: {...}\n\n` 形式のメッセージ送信
-        - タイムアウト処理とエラーハンドリング
-
-        最適化ポイント:
-        - Edge Functionによる低レイテンシ配信
-        - ポーリング間隔の最適化
-        - 接続管理（不要な接続の早期クローズ）
-        - KVストアへの負荷軽減（キャッシュ検討）
-      dependency:
-        - src/api/jobStore.js
-      agent: "claude-3-7-sonnet-20250219"
-      api: []
-
-    user-pdfs.js: # 新規ファイル
-      content: |-
-        ユーザーPDF履歴確認API
-
-        機能:
-        - 特定ユーザー（識別子が必要、例: 決済IDやハッシュ化メール）に関連付けられた生成済みPDFのリストを取得
-        - Vercel KVからユーザーに関連するジョブ情報を検索
-        - Vercel Blobから対応するPDFへのアクセスURL（署名付きURLなど）を生成
-
-        実装詳細:
-        - Vercel Serverless Function / API Route
-        - ユーザー認証/識別メカニズム（要検討、例: セッション、トークン）
-        - Vercel KVクエリによるジョブ検索（例: `scan` やインデックス利用）
-        - `storage.js` を使用してBlobストレージから署名付きURL等を取得
-        - 結果をJSON形式で返却（PDFファイル名、生成日時、アクセスURLなど）
-
-        最適化ポイント:
-        - 効率的なKVストア検索（インデックス設計）
-        - BlobアクセスURLの有効期限設定
-        - 認証・認可の適切な実装
-        - レスポンスデータの最小化
-      dependency:
-        - src/api/jobStore.js # KVストア検索用
-        - src/lib/storage.js # BlobアクセスURL生成用
-        - src/lib/kv-store.js # KVストア直接操作が必要な場合
-      agent: "claude-3-7-sonnet-20250219"
-      api: []
-
-  lib:
-    gemini-api.js:
-      content: |-
-        Gemini API連携ライブラリ
-
-        機能:
-        - API呼び出し時のエラーハンドリングとログ出力
-        - 汎用関数と特定用途関数をエクスポート
-
-        最適化ポイント:
-        - APIクライアントのシングルトン管理 (`initializeGemini`)
-        - プロンプト最適化（各関数内での工夫）
-        - リトライロジックによるAPIエラー耐性向上
-        - **日別占い生成時の月別リクエスト並列化による時間短縮**
-        - 応答解析の共通化
-      dependency: []
-      agent: "claude-3-7-sonnet-20250219" # Updated
-      api: ["gemini-pro"]
-
-    storage.js: # 新規ファイル
-      content: |-
-        Vercel Blob 連携ライブラリ
-
-        機能:
-        - Vercel Blobクライアントの初期化と管理
-        - ファイル（PDF）のアップロード (`uploadPdf`)
-        - ファイルのダウンロードURL生成 (`getDownloadUrl`) (署名付きURLなど)
-        - ファイルの削除 (`deletePdf`)
-
-        実装詳細:
-        - Vercel Blob SDK (`@vercel/blob`) の使用
-        - 環境変数からの接続情報読み込み
-        - アップロード時のオプション設定（公開/非公開、キャッシュ制御など）
-        - URL生成時の有効期限設定
+# 主要コンポーネント
+components:
+  api:
+    - name: process-payment.js
+      purpose: Pay.jp APIを使用した決済処理と成功時のPDF生成リクエスト
+      features:
+        - トークンによる決済処理
+        - ユーザーデータ検証
+        - 決済情報のKV保存
+        - PDF生成リクエスト自動送信
         - エラーハンドリング
 
-        最適化ポイント:
-        - クライアントのシングルトン管理
-        - アップロード/ダウンロード処理の効率化
-        - 適切なアクセス制御設定
-        - エラー時のリトライロジック（必要に応じて）
-      dependency: [] # @vercel/blob SDK
-      agent: "claude-3-7-sonnet-20250219"
-      api: []
+    - name: generate-pdf.js
+      purpose: PDF生成ジョブの作成と進捗管理
+      features:
+        - ジョブID発行
+        - 占い計算とAPI呼び出し
+        - PDF生成と保存
+        - メール送信
 
-    kv-store.js: # 新規ファイル
-      content: |-
-        Vercel KV 連携ライブラリ
+    - name: pdf-progress/[jobId].js
+      purpose: SSEによる進捗状況通知
+      features:
+        - リアルタイム進捗通知
+        - KVからのジョブ状態取得
 
-        機能:
-        - Vercel KVクライアントの初期化と管理
-        - キー/バリューの基本的な操作 (`get`, `set`, `del`)
-        - JSONオブジェクトの保存と取得
-        - リスト操作 (`lpush`, `lrange` など)
-        - TTL（有効期限）の設定
+    - name: user-pdfs.js
+      purpose: ユーザーPDF履歴取得API
+      features:
+        - KVストアからユーザーPDF情報検索
+        - Blobからの署名付きURL生成
 
-        実装詳細:
-        - Vercel KV SDK (`@vercel/kv`) の使用
-        - 環境変数からの接続情報読み込み
-        - KV操作の共通ラッパー関数
-        - エラーハンドリング（接続エラー、キー不在など）
+  lib:
+    - name: payjp-api.js
+      purpose: Pay.jp API連携ラッパー
+      features:
+        - 決済作成
+        - エラーハンドリング
 
-        最適化ポイント:
-        - クライアントのシングルトン管理
-        - データ型に応じた適切なKVコマンドの使用
-        - キー設計の考慮
-        - エラー時のフォールバック処理
-      dependency: [] # @vercel/kv SDK
-      agent: "claude-3-7-sonnet-20250219"
-      api: []
+    - name: kv-store.js
+      purpose: Vercel KV連携ライブラリ（汎用関数）
+      features:
+        - KVクライアント管理
+        - 基本操作ラッパー
+        - エラーハンドリング
 
-    email-service.js: # 更新 (内容は既存に近いが明示的に)
-      content: |-
-        メール送信機能ライブラリ (SendGrid/Resend対応)
+    - name: storage.js
+      purpose: Vercel Blob連携ライブラリ
+      features:
+        - PDFアップロード/ダウンロード
+        - 署名付きURL生成
 
-        機能:
-        - 環境変数に基づきSendGridまたはResendを使用してメールを送信
-        - PDFファイルの添付（Base64コンテンツまたはURLからのフェッチ）
-        - テキスト形式とHTML形式のメール本文サポート
+    - name: email-service.js
+      purpose: メール送信サービス
+      features:
+        - 複数プロバイダー対応
+        - PDF添付
+        - HTMLメール
 
-        実装詳細:
-        - `EMAIL_PROVIDER` 環境変数でプロバイダーを切り替え
-        - `@sendgrid/mail` または `resend` SDKの動的インポート
-        - PDF添付処理 (`fetchPdfAsAttachment` または直接Base64利用)
-        - 共通インターフェース (`sendPdfEmail`)
+    - name: gemini-api.js
+      purpose: Google Gemini API連携
+      features:
+        - 占い生成
+        - リトライロジック
 
-        最適化ポイント:
-        - SDKの遅延ロード
-        - 添付ファイル処理の共通化
-        - APIキーの安全な管理
-        - エラーハンドリングとログ出力
-      dependency: [] # @sendgrid/mail, resend SDKs
-      agent: "claude-3-7-sonnet-20250219" # Updated
-      api: []
+    - name: astrology.js
+      purpose: 西洋占星術計算
 
-    astrology.js:
-      content: |-
-        astrology.js
+    - name: four-pillars.js
+      purpose: 四柱推命計算
+
+# 将来の拡張計画
+future_plans:
+  - ユーザー認証/認可システムの強化
+  - サブスクリプションモデルの検討
+  - モバイルアプリ対応
+  - 多言語サポート
+  - AIモデルの精度向上
+---

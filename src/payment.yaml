@@ -1,0 +1,389 @@
+---
+# 占いサービス決済機能 仕様書
+payjp_integration:
+  name: ライフサイクルポテンシャル占術決済システム
+  version: 1.0.0
+  description: Pay.jp APIを使用したクレジットカード決済機能
+  payment_amount: 10000
+  currency: jpy
+
+# フロントエンド実装
+frontend:
+  sdk:
+    name: PAY.JP JavaScript SDK
+    loading: 遅延読み込み (DOMContentLoaded後)
+    url: "https://js.pay.jp/v2/pay.js"
+
+  card_tokenization:
+    function: createCardToken
+    flow:
+      - カード番号/有効期限/CVC入力
+      - 入力値のバリデーション
+      - Pay.jpへの送信とトークン取得
+      - トークンの一時保持（非永続）
+
+  payment_form:
+    required_fields:
+      - name: 氏名（漢字）
+      - email: メールアドレス
+      - birthDate: 生年月日
+      - birthplace: 出生地（任意）
+    validation:
+      client_side: true
+      patterns:
+        email: 標準的なメールアドレス形式
+        birthDate: YYYY-MM-DD形式
+    error_display: フォーム下部にメッセージ表示
+
+# バックエンド実装
+backend:
+  api_endpoints:
+    standard_payment:
+      path: /api/process-payment
+      method: POST
+      description: 標準の決済処理（認証と決済を同時実行）
+
+    authorization_only:
+      path: /api/process-payment
+      method: POST
+      description: 与信枠確保のみ（認証のみ実行）
+      additional_params:
+        authOnly: true
+        expiryDays: 与信枠の有効期限（1〜60日、デフォルト7日）
+
+    capture_payment:
+      path: /api/process-payment/capture/{chargeId}
+      method: POST
+      description: 確保された与信枠の決済確定
+      path_params:
+        chargeId: 与信枠IDをパスに含める
+      optional_params:
+        amount: 確定金額（与信確保時の金額以下、省略時は全額確定）
+
+    release_authorization:
+      path: /api/process-payment/release/{chargeId}
+      method: POST
+      description: 確保された与信枠の解放
+      path_params:
+        chargeId: 与信枠IDをパスに含める
+
+  request_body:
+    token: Pay.jpで生成されたトークン
+    userData:
+      name: ユーザー名
+      email: メールアドレス
+      birthDate: 生年月日
+      birthplace: 出生地（任意）
+    authOnly: 認証のみ実行フラグ（true/false）
+    expiryDays: 与信枠の有効期限（日数）
+
+  payjp_api:
+    integration: lib/payjp-api.js
+    functions:
+      createCharge:
+        description: 通常の決済処理（認証と決済を同時実行）
+        parameters:
+          token: Pay.jpトークン
+          amount: 10000
+          currency: jpy
+          description: ライフサイクル・ポテンシャル占術 詳細鑑定PDF
+          metadata:
+            customer_name: ユーザー名
+            customer_email: メールアドレス
+            birthDate: 生年月日
+            birthplace: 出生地
+
+      createAuthorization:
+        description: 与信枠確保のみ（支払いを確定しない）
+        parameters:
+          token: Pay.jpトークン
+          amount: 10000
+          currency: jpy
+          description: ライフサイクル・ポテンシャル占術 詳細鑑定PDF（与信枠確保）
+          metadata:
+            customer_name: ユーザー名
+            customer_email: メールアドレス
+            birthDate: 生年月日
+            birthplace: 出生地
+          expiryDays: 有効期限（1〜60日）
+        note: capture=false, expiry_daysパラメータを使用
+
+      capturePayment:
+        description: 与信枠が確保された支払いを確定
+        parameters:
+          chargeId: 与信枠が確保された支払いID
+          amount: 確定金額（オプション、与信枠確保時の金額以下）
+
+      releaseAuthorization:
+        description: 確保された与信枠を解放
+        parameters:
+          chargeId: 与信枠が確保された支払いID
+
+  timeout_handling:
+    duration: 15000 # 15秒
+    strategy: Promise.race
+
+  responses:
+    standard_payment:
+      success:
+        status_code: 200
+        body:
+          success: true
+          message: 決済が完了しました。PDF生成を開始します。
+          paymentId: Pay.jpの決済ID
+          transactionId: 内部生成のトランザクションID
+
+    authorization_only:
+      success:
+        status_code: 200
+        body:
+          success: true
+          message: 与信枠の確保が完了しました。
+          authorizationId: 与信枠確保ID
+          transactionId: 内部生成のトランザクションID
+          expiryDays: 有効期限（日数）
+
+    capture_payment:
+      success:
+        status_code: 200
+        body:
+          success: true
+          message: 支払いが確定されました。
+          paymentId: 支払いID
+          amount: 元の金額
+          capturedAmount: 確定された金額
+          refundedAmount: 差額（返金された金額）
+
+    release_authorization:
+      success:
+        status_code: 200
+        body:
+          success: true
+          message: 与信枠が解放されました。
+          chargeId: 解放された与信枠ID
+          refundedAmount: 解放された金額
+
+    error:
+      validation_error:
+        status_code: 400
+        error_types:
+          - 決済トークンが見つかりません
+          - ユーザー情報が必要です
+          - ユーザー情報が不完全です
+      timeout_error:
+        status_code: 408
+        message: 決済処理がタイムアウトしました
+      api_error:
+        status_code: 400
+        message: 決済サービスでエラーが発生しました
+      server_error:
+        status_code: 500
+        message: 決済処理中にサーバー内部エラーが発生しました
+
+# KVストア連携
+kv_storage:
+  library: lib/kv-store.js
+  data_structures:
+    standard_payment:
+      key_format: payment:{payment_id}
+      value:
+        id: Pay.jpの決済ID
+        amount: 決済金額
+        status: 決済状態
+        userData: ユーザー情報オブジェクト
+        timestamp: 決済日時（ISO形式）
+        transactionId: 内部トランザクションID
+      ttl: 2592000 # 30日（秒）
+
+    authorization:
+      key_format: auth:{authorization_id}
+      value:
+        id: 与信枠ID
+        amount: 金額
+        status: 状態（authorized/captured/released）
+        userData: ユーザー情報
+        timestamp: 与信枠確保日時（ISO形式）
+        transactionId: 内部トランザクションID
+        expiryDate: 有効期限日時（ISO形式）
+      ttl: 5184000 # 最大60日（秒）
+
+# 自動PDF生成リクエスト
+auto_pdf_generation:
+  enabled: true
+  triggers:
+    - 標準決済完了時
+    - 与信枠確定時（userData情報がある場合）
+  request:
+    endpoint: /api/generate-pdf
+    method: POST
+    body:
+      userData: ユーザー情報
+      paymentId: Pay.jpの決済ID
+      transactionId: 内部トランザクションID
+      email: ユーザーのメールアドレス
+  error_handling:
+    strategy: ログ記録のみ（決済成功扱い）
+
+# セキュリティ対策
+security:
+  pci_dss: Pay.jpトークン化により準拠
+  connection: HTTPS必須
+  api_key_storage: 環境変数
+  input_validation: サーバーサイドでの検証
+  error_messages: 本番環境では詳細エラーを非表示
+
+# 開発・テスト環境
+development:
+  test_cards_categories:
+    valid_cards:
+      description: トークン作成・決済とも成功するカード
+      cards:
+        - number: 4242424242424242
+          brand: Visa
+          description: すべての処理が成功する標準テストカード
+        - number: 5555555555554444
+          brand: Mastercard
+          description: すべての処理が成功する標準テストカード
+        - number: 3530111333300000
+          brand: JCB
+          description: すべての処理が成功する標準テストカード
+        - number: 3566002020140000
+          brand: JCB
+          description: すべての処理が成功する標準テストカード
+        - number: 378282246310005
+          brand: American Express
+          description: すべての処理が成功する標準テストカード
+        - number: 36700102000000
+          brand: Diners Club
+          description: すべての処理が成功する標準テストカード
+
+    token_error_cards:
+      description: トークン作成時にエラーが発生するカード
+      cards:
+        - number: 4000000000000000
+          brand: Visa
+          error_code: card_declined
+          description: カード拒否エラー（トークン化時）
+        - number: 4000000000000101
+          brand: Visa
+          error_code: expired_card
+          description: 有効期限切れカード
+        - number: 4000000000000068
+          brand: Visa
+          error_code: invalid_cvc
+          description: 不正なセキュリティコード
+        - number: 4000000000000127
+          brand: Visa
+          error_code: invalid_number
+          description: 不正なカード番号
+
+    payment_error_cards:
+      description: トークン作成は成功するが決済時にエラーが発生するカード
+      cards:
+        - number: 4000000000000341
+          brand: Visa
+          error_code: card_declined
+          description: カード拒否エラー（決済時）
+        - number: 4000000000000036
+          brand: Visa
+          error_code: insufficient_funds
+          description: 残高不足
+        - number: 4000000000000010
+          brand: Visa
+          error_code: processing_error
+          description: 処理エラー
+        - number: 4000000000000044
+          brand: Visa
+          error_code: restricted_card
+          description: 制限付きカード
+        - number: 4000000000000028
+          brand: Visa
+          error_code: lifetime_exceeded
+          description: 利用限度額超過
+          threshold: 10000
+
+    special_status_cards:
+      description: 特殊なステータスを返すカード
+      cards:
+        - number: 4242424242424242
+          brand: Visa
+          special_case: authenticating
+          description: 3Dセキュア認証が必要
+          parameters:
+            threed_secure_required: true
+        - number: 4000000000000000
+          brand: Visa
+          special_case: pending
+          description: 処理保留
+          parameters:
+            status: pending
+
+  card_brands:
+    - name: Visa
+      numbers: [4242424242424242, 4000000000000000]
+      pattern: "^4[0-9]{12}(?:[0-9]{3})?$"
+    - name: Mastercard
+      numbers: [5555555555554444, 5200828282828210]
+      pattern: "^5[1-5][0-9]{14}$"
+    - name: American Express
+      numbers: [378282246310005, 371449635398431]
+      pattern: "^3[47][0-9]{13}$"
+    - name: JCB
+      numbers: [3566002020140000, 3530111333300000]
+      pattern: "^(?:2131|1800|35\\d{3})\\d{11}$"
+    - name: Diners Club
+      numbers: [36700102000000, 36148900647913]
+      pattern: "^3(?:0[0-5]|[68][0-9])[0-9]{11}$"
+
+  environment_variables:
+    PAYJP_PUBLIC_KEY: pk_test_xxxx
+    PAYJP_SECRET_KEY: sk_test_xxxx
+
+  test_tips:
+    - カード番号と有効期限だけでなく、CVCも正しく設定する
+    - 有効期限は常に未来の日付を使用する
+    - トークン化テストと決済テストは常にセットで行う
+    - エラー処理のテストには該当するテストカードを使用する
+    - 3Dセキュア対応のテストは特殊なテストケースで行う
+
+# 動作フロー
+flow_examples:
+  standard_payment:
+    description: 通常の決済フロー（認証と決済を同時実行）
+    steps:
+      - フロントエンドでカード情報をトークン化
+      - サーバーに決済リクエスト（token, userData）を送信
+      - サーバーがPay.jpで決済処理（認証と決済同時実行）
+      - 決済情報をKVストアに保存
+      - PDF生成リクエストを自動実行
+      - クライアントに結果を返却
+
+  two_step_payment:
+    description: 2段階決済フロー（認証と決済を分離）
+    steps:
+      - フロントエンドでカード情報をトークン化
+      - サーバーに与信枠確保リクエスト（token, userData, authOnly=true）を送信
+      - サーバーがPay.jpで与信枠確保処理（認証のみ実行）
+      - 与信枠情報をKVストアに保存
+      - クライアントに結果を返却
+      - （後日または条件成立時）サーバーに支払い確定リクエストを送信
+      - サーバーがPay.jpで支払い確定処理
+      - 決済情報をKVストアに更新
+      - PDF生成リクエストを自動実行
+      - クライアントに結果を返却
+
+# 利用シナリオ
+use_cases:
+  - title: 即時決済
+    description: ユーザーが通常フローで商品/サービスを購入
+    flow_type: standard_payment
+
+  - title: 仮押さえ後確定
+    description: 在庫確認後に支払い確定（在庫がない場合は与信枠解放）
+    flow_type: two_step_payment
+
+  - title: 分割金額での確定
+    description: 与信枠確保後、確定時に金額を調整（元の金額以下）
+    flow_type: two_step_payment
+    notes: capturePaymentでamountパラメータを指定
+---

@@ -99,8 +99,16 @@ const PaymentController = (function() {
                 <div class="payment-error card-cvc-error"></div>
               </div>
             </div>
+            <div class="purchase-confirmation">
+              <div class="confirmation-checkbox">
+                <input type="checkbox" id="purchase-confirmation-checkbox">
+                <label for="purchase-confirmation-checkbox">上記の金額（10,000円）で詳細鑑定PDFを購入することに同意します</label>
+              </div>
+              <a href="tokushoho.html" class="tokushoho-link" target="_blank">特定商取引法に基づく表記を確認する</a>
+              <p class="email-info">※購入後のキャンセル・返金はできません。詳細は特定商取引法の表記をご確認ください。</p>
+            </div>
             <div class="form-row">
-              <button type="submit" id="payment-submit" class="payment-submit-button">
+              <button type="submit" id="payment-submit" class="payment-submit-button" disabled>
                 <span class="button-text">購入する</span>
                 <span class="button-loader hidden">
                   <span class="spinner"></span>
@@ -128,6 +136,8 @@ const PaymentController = (function() {
     const overlay = paymentModal.querySelector('.payment-modal-overlay');
     const form = paymentModal.querySelector('#payment-form');
     const emailCheckbox = paymentModal.querySelector('#send-email-checkbox');
+    const purchaseConfirmCheckbox = paymentModal.querySelector('#purchase-confirmation-checkbox');
+    const submitButton = paymentModal.querySelector('#payment-submit');
 
     closeButton.addEventListener('click', () => {
       if (!isProcessing) hidePaymentModal();
@@ -142,6 +152,11 @@ const PaymentController = (function() {
     // メール送信チェックボックスの状態を監視
     emailCheckbox.addEventListener('change', () => {
       emailSendOption = emailCheckbox.checked;
+    });
+
+    // 購入確認チェックボックスの状態を監視
+    purchaseConfirmCheckbox.addEventListener('change', () => {
+      submitButton.disabled = !purchaseConfirmCheckbox.checked;
     });
 
     return paymentModal;
