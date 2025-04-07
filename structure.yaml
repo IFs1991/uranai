@@ -382,7 +382,7 @@ src:
         - Gemini APIクライアントの初期化と管理
         - 汎用的なプロンプト応答生成 (`generateGeminiResponse`)
         - 指数バックオフ付きリトライ処理 (`retryWithBackoff`)
-        - 日別占い生成 (`generateDailyHoroscopes`)
+        - 日別占い生成 (`generateDailyHoroscopes`): **月ごとのバッチ処理と並列リクエストによる高速化実装**
         - 詳細鑑定文生成 (`generateComprehensiveReading`) ※PDF生成用
         - エラー時のフォールバック占い生成 (`generateFallbackHoroscopes`)
         - API応答の基本的な解析（JSON抽出）
@@ -398,6 +398,7 @@ src:
         - APIクライアントのシングルトン管理 (`initializeGemini`)
         - プロンプト最適化（各関数内での工夫）
         - リトライロジックによるAPIエラー耐性向上
+        - **日別占い生成時の月別リクエスト並列化による時間短縮**
         - 応答解析の共通化
       dependency: []
       agent: "claude-3-7-sonnet-20250219" # Updated

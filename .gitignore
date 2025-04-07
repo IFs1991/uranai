@@ -27,7 +27,7 @@ Thumbs.db
 *.swp
 
 # Configuration files (add these if not already ignored)
-structure.yaml
+# structure.yaml
 aioverview.yaml
 
 # Test directory

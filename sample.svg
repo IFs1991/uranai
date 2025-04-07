@@ -1,0 +1,645 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 13200" font-family="sans-serif">
+  <defs>
+    <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#191970" />
+      <stop offset="100%" stop-color="#0E0E38" />
+    </linearGradient>
+
+    <linearGradient id="headerFooterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+       <stop offset="0%" stop-color="rgba(72, 61, 139, 0.5)" />
+       <stop offset="100%" stop-color="rgba(72, 61, 139, 0.3)" />
+    </linearGradient>
+
+    <linearGradient id="sectionHeaderGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="rgba(147, 112, 219, 0.4)" />
+        <stop offset="100%" stop-color="rgba(147, 112, 219, 0.6)" />
+    </linearGradient>
+
+    <linearGradient id="cardGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(25, 25, 112, 0.7)" />
+      <stop offset="100%" stop-color="rgba(25, 25, 112, 0.8)" />
+    </linearGradient>
+
+    <symbol id="starSymbol" viewBox="0 0 24 24">
+      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" fill="#FFD700" />
+    </symbol>
+
+    <symbol id="sunSymbol" viewBox="0 0 24 24">
+       <circle cx="12" cy="12" r="8" fill="#FFD700" />
+       <circle cx="12" cy="12" r="5" fill="rgba(255,255,255,0.5)" />
+    </symbol>
+
+    <symbol id="moonSymbol" viewBox="0 0 24 24">
+      <path d="M12 2 A10 10 0 1 0 12 22 A8 8 0 1 1 12 2 Z" fill="#FFD700" />
+    </symbol>
+
+    <symbol id="planetSymbol" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="6" fill="#9370DB" />
+        <line x1="12" y1="6" x2="12" y2="18" stroke="#F8F8FF" stroke-width="1"/>
+        <line x1="6" y1="12" x2="18" y2="12" stroke="#F8F8FF" stroke-width="1"/>
+    </symbol>
+
+    <symbol id="zodiacSymbolTaurus" viewBox="0 0 24 24">
+        <circle cx="12" cy="14" r="6" stroke="#FFD700" stroke-width="1.5" fill="none"/>
+        <path d="M 6 14 A 6 6 0 0 1 18 14" stroke="#FFD700" stroke-width="1.5" fill="none"/>
+        <path d="M 8 6 A 4 4 0 0 1 16 6" stroke="#FFD700" stroke-width="1.5" fill="none"/>
+    </symbol>
+     <symbol id="zodiacSymbolCancer" viewBox="0 0 24 24">
+        <path d="M 6 9 A 4 4 0 0 1 10 5 A 4 4 0 0 1 14 9" stroke="#FFD700" stroke-width="1.5" fill="none"/>
+        <path d="M 18 15 A 4 4 0 0 1 14 19 A 4 4 0 0 1 10 15" stroke="#FFD700" stroke-width="1.5" fill="none"/>
+    </symbol>
+     <symbol id="zodiacSymbolPlaceholder" viewBox="0 0 24 24">
+         <rect x="4" y="4" width="16" height="16" stroke="#FFD700" stroke-width="1.5" fill="none" />
+         <text x="12" y="17" font-size="10" fill="#FFD700" text-anchor="middle">?</text>
+     </symbol>
+
+    <linearGradient id="dividerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="rgba(255, 215, 0, 0)" />
+      <stop offset="50%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="rgba(255, 215, 0, 0)" />
+    </linearGradient>
+
+    <pattern id="starsPattern" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="0.8" fill="white" opacity="0.3" />
+      <circle cx="30" cy="15" r="0.6" fill="white" opacity="0.3" />
+      <circle cx="55" cy="40" r="0.9" fill="white" opacity="0.3" />
+      <circle cx="80" cy="15" r="0.4" fill="white" opacity="0.3" />
+      <circle cx="120" cy="30" r="0.7" fill="white" opacity="0.3" />
+      <circle cx="150" cy="70" r="0.5" fill="white" opacity="0.3" />
+      <circle cx="180" cy="120" r="0.7" fill="white" opacity="0.3" />
+      <circle cx="140" cy="180" r="0.6" fill="white" opacity="0.3" />
+      <circle cx="90" cy="160" r="0.8" fill="white" opacity="0.3" />
+      <circle cx="40" cy="180" r="0.5" fill="white" opacity="0.3" />
+      <circle cx="20" cy="130" r="0.9" fill="white" opacity="0.3" />
+    </pattern>
+
+    <style>
+      .bodyText { font-size: 11px; fill: #F8F8FF; line-height: 1.6; }
+      .smallText { font-size: 10px; fill: #F8F8FF; }
+      .label { font-size: 12px; font-weight: bold; fill: #9370DB; }
+      .value { font-size: 12px; fill: #F8F8FF; }
+      .sectionTitle { font-size: 16px; font-weight: bold; fill: #FFD700; }
+      .cardTitle { font-size: 14px; font-weight: bold; fill: #FFD700; }
+      .subHeading { font-size: 13px; font-weight: bold; fill: #FFD700; }
+      .tocTitle { font-size: 24px; font-weight: bold; fill: #FFD700; }
+      .tocItemL1 { font-size: 14px; font-weight: bold; fill: #F8F8FF; }
+      .tocItemL2 { font-size: 12px; fill: #F8F8FF; }
+    </style>
+  </defs>
+
+  <rect width="800" height="13200" fill="url(#backgroundGradient)" />
+  <rect width="800" height="13200" fill="url(#starsPattern)" opacity="0.7" />
+
+  <line x1="0" y1="1100" x2="800" y2="1100" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="2200" x2="800" y2="2200" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="3300" x2="800" y2="3300" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="4400" x2="800" y2="4400" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="5500" x2="800" y2="5500" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="6600" x2="800" y2="6600" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="7700" x2="800" y2="7700" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="8800" x2="800" y2="8800" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="9900" x2="800" y2="9900" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="11000" x2="800" y2="11000" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="12100" x2="800" y2="12100" stroke="rgba(255,0,0,0.2)" />
+  <line x1="0" y1="13200" x2="800" y2="13200" stroke="rgba(255,0,0,0.2)" />
+
+  <g id="page1" transform="translate(0, 0)">
+    <text x="400" y="280" font-family="'Hannari Mincho', serif" font-size="36" fill="#FFD700" text-anchor="middle">ライフサイクル・ポテンシャル占術</text>
+    <text x="400" y="340" font-size="18" font-weight="bold" fill="#9370DB" text-anchor="middle">鑑定書</text>
+
+    <text x="400" y="500" font-size="24" font-weight="bold" fill="#F8F8FF" text-anchor="middle">山田 太郎 様</text>
+
+    <text x="400" y="560" class="value" text-anchor="middle">生年月日: 1985年5月10日</text>
+    <text x="400" y="585" class="value" text-anchor="middle">出生時刻: 12:30</text>
+    <text x="400" y="610" class="value" text-anchor="middle">出生地: 東京都新宿区</text>
+
+    <text x="400" y="950" class="smallText" text-anchor="middle">作成日: 2025年4月5日</text>
+
+    <use href="#starSymbol" x="50" y="50" width="30" height="30"/>
+    <use href="#starSymbol" x="720" y="50" width="30" height="30"/>
+    <use href="#starSymbol" x="50" y="1000" width="30" height="30"/>
+    <use href="#starSymbol" x="720" y="1000" width="30" height="30"/>
+
+    <rect x="0" y="1040" width="800" height="60" fill="rgba(72, 61, 139, 0.3)" />
+    <text x="400" y="1075" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+  </g>
+
+  <g id="page2" transform="translate(0, 1100)">
+    <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/> <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+    <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+    <text x="400" y="180" class="tocTitle" text-anchor="middle">目次</text>
+
+    <g transform="translate(100, 250)">
+      <text y="0" class="tocItemL1">1. 基本情報 <tspan dx="100" alignment-baseline="middle">.............................. P.3</tspan></text>
+      <text y="30" class="tocItemL1">2. コアエネルギー解説 <tspan dx="50" alignment-baseline="middle">..................... P.4</tspan></text>
+      <text y="55" class="tocItemL2" dx="30">2.1 西洋占星術チャート <tspan dx="50" alignment-baseline="middle">................... P.4</tspan></text>
+      <text y="75" class="tocItemL2" dx="30">2.2 四柱推命チャート <tspan dx="60" alignment-baseline="middle">..................... P.5</tspan></text>
+      <text y="95" class="tocItemL2" dx="30">2.3 エネルギーバランス分析 <tspan dx="30" alignment-baseline="middle">............ P.6</tspan></text>
+      <text y="125" class="tocItemL1">3. 才能と人生のテーマ <tspan dx="50" alignment-baseline="middle">.................... P.7</tspan></text>
+      <text y="150" class="tocItemL2" dx="30">3.1 あなたの主要な才能 <tspan dx="50" alignment-baseline="middle">................ P.7</tspan></text>
+      <text y="170" class="tocItemL2" dx="30">3.2 人生のテーマ <tspan dx="80" alignment-baseline="middle">........................... P.8</tspan></text>
+      <text y="190" class="tocItemL2" dx="30">3.3 成長のための課題 <tspan dx="55" alignment-baseline="middle">..................... P.9</tspan></text>
+      <text y="220" class="tocItemL1">4. 運命の流れと転機 <tspan dx="55" alignment-baseline="middle">...................... P.10</tspan></text>
+      <text y="245" class="tocItemL2" dx="30">4.1 現在の運気傾向 <tspan dx="65" alignment-baseline="middle">....................... P.10</tspan></text>
+      <text y="265" class="tocItemL2" dx="30">4.2 今後の運気の流れ <tspan dx="55" alignment-baseline="middle">................... P.11</tspan></text>
+      <text y="285" class="tocItemL2" dx="30">4.3 人生の主要な転機 <tspan dx="55" alignment-baseline="middle">................... P.12</tspan></text>
+      <text y="315" class="tocItemL1">5. 特定質問への回答 <tspan dx="60" alignment-baseline="middle">...................... P.13</tspan></text>
+      <text y="345" class="tocItemL1">6. 総合鑑定まとめ <tspan dx="75" alignment-baseline="middle">........................ P.14</tspan></text>
+      <text y="375" class="tocItemL1">7. 365日運勢カレンダー <tspan dx="30" alignment-baseline="middle">.................. P.15</tspan></text>
+      <text y="400" class="tocItemL2" dx="30">7.1 月別運勢ガイド <tspan dx="70" alignment-baseline="middle">....................... P.15</tspan></text>
+      <text y="420" class="tocItemL2" dx="30">7.2 日別詳細予報 <tspan dx="75" alignment-baseline="middle">......................... P.16</tspan></text>
+    </g>
+
+    <rect x="250" y="500" width="300" height="2" fill="url(#dividerGradient)"/>
+
+    <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+    <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 2 -</text>
+  </g>
+
+  <g id="page3" transform="translate(0, 2200)">
+    <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+    <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+    <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+    <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+    <text x="70" y="157" class="sectionTitle">1. 基本情報</text>
+    <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+    <rect x="50" y="190" width="700" height="450" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <g transform="translate(70, 210)"> <text y="0" class="cardTitle">鑑定対象者情報</text>
+      <g transform="translate(0, 30)">
+        <text y="0" class="label">お名前:</text>
+        <text x="100" y="0" class="value">山田 太郎</text>
+        <text y="25" class="label">生年月日:</text>
+        <text x="100" y="25" class="value">1985年5月10日</text>
+        <text y="50" class="label">出生時刻:</text>
+        <text x="100" y="50" class="value">12:30</text>
+        <text y="75" class="label">出生地:</text>
+        <text x="100" y="75" class="value">東京都新宿区</text>
+      </g>
+
+      <text y="125" class="cardTitle">特定の質問</text>
+       <foreignObject x="0" y="155" width="660" height="50">
+         <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+           今後のキャリアパスについて、特に転職すべきか、現職でスキルアップを目指すべきか悩んでいます。どちらの道が私のポテンシャルをより活かせるでしょうか？
+         </div>
+       </foreignObject>
+
+      <text y="225" class="cardTitle">鑑定概要</text>
+       <foreignObject x="0" y="255" width="660" height="150">
+         <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+           <p>この鑑定書は、あなたの持つ独自のエネルギーパターン（西洋占星術と四柱推命の組み合わせ）を解き明かし、人生の様々な側面における可能性と課題を探求します。</p>
+           <p>・あなたの核となる性格と才能<br/>・人生における重要なテーマと成長の課題<br/>・運気の流れと注意すべき時期<br/>・特定の質問への占術的視点からの回答</p>
+           <p>これらの情報を通じて、あなたがより自分らしい人生を歩むための指針を提供します。</p>
+         </div>
+       </foreignObject>
+    </g>
+
+    <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+    <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 3 -</text>
+  </g>
+
+   <g id="page4" transform="translate(0, 3300)">
+    <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+    <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+    <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+    <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+    <text x="70" y="157" class="sectionTitle">2. コアエネルギー解説</text>
+    <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+    <rect x="50" y="190" width="700" height="750" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <g transform="translate(70, 210)"> <text y="0" class="cardTitle">2.1 西洋占星術チャート</text>
+      <g transform="translate(0, 30)">
+        <use href="#sunSymbol" x="0" y="0" width="15" height="15"/>
+        <text x="20" y="12" class="label">太陽星座:</text>
+        <use href="#zodiacSymbolTaurus" x="150" y="0" width="15" height="15"/>
+        <text x="170" y="12" class="value">牡牛座</text>
+        <use href="#moonSymbol" x="0" y="30" width="15" height="15"/>
+        <text x="20" y="42" class="label">月星座:</text>
+        <use href="#zodiacSymbolCancer" x="150" y="30" width="15" height="15"/>
+        <text x="170" y="42" class="value">蟹座</text>
+        <text x="0" y="72" class="label">ｱｾﾝﾀﾞﾝﾄ:</text> <use href="#zodiacSymbolPlaceholder" x="150" y="60" width="15" height="15"/> <text x="170" y="72" class="value">天秤座</text>
+      </g>
+
+      <g transform="translate(0, 110)">
+        <rect x="0" y="0" width="180" height="180" fill="rgba(0,0,0,0.2)" stroke="#9370DB" stroke-width="1"/>
+        <text x="90" y="90" font-size="10" fill="#9370DB" text-anchor="middle">占星術チャート</text>
+        <text x="90" y="105" font-size="10" fill="#9370DB" text-anchor="middle">(イメージ)</text>
+         <foreignObject x="200" y="0" width="460" height="180">
+           <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px; line-height: 1.5;">
+             ※ この星図はあなたの出生時の惑星配置を示しています。各惑星の位置や角度（アスペクト）、ハウスと呼ばれる領域が、あなたの性格特性、行動パターン、潜在的な才能や人生の課題に影響を与えています。<br/>
+             - 太陽(牡牛座): 安定性、忍耐力、五感の豊かさ<br/>
+             - 月(蟹座): 共感力、感受性、家庭や仲間意識<br/>
+             - ASC(天秤座): バランス感覚、社交性、美的感覚
+           </div>
+         </foreignObject>
+      </g>
+
+      <text y="320" class="cardTitle">2.2 四柱推命チャート</text>
+       <g transform="translate(0, 350)">
+          <text y="0" class="label">日主 (日干):</text>
+          <text x="150" y="0" class="value">甲 (きのえ) - 木+</text>
+          <text y="30" class="label">五行バランス:</text>
+          <text x="150" y="30" class="value">木:1 火:2 土:1 金:1 水:2</text>
+          <text x="150" y="50" class="smallText">(木がやや弱く、火と水が強い傾向)</text>
+       </g>
+
+       <g transform="translate(0, 440)">
+         <rect x="0" y="0" width="180" height="140" fill="rgba(0,0,0,0.2)" stroke="#9370DB" stroke-width="1"/>
+         <text x="90" y="70" font-size="10" fill="#9370DB" text-anchor="middle">四柱推命 命式表</text>
+         <text x="90" y="85" font-size="10" fill="#9370DB" text-anchor="middle">(イメージ)</text>
+          <foreignObject x="200" y="0" width="460" height="140">
+            <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px; line-height: 1.5;">
+              ※ この四柱推命チャートは、あなたの生年月日時を基にした命式（運命の設計図）です。年・月・日・時の四つの柱にある干支（十干十二支）から、あなたの生まれ持った性質や才能、運気の流れを読み解きます。<br/>
+              - 日主(甲): 向上心、リーダーシップ、まっすぐな性質<br/>
+              - 五行バランス: あなたのエネルギー構成を示します。各要素の強弱が性格や運気に影響します。
+            </div>
+          </foreignObject>
+       </g>
+    </g>
+
+    <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+    <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 4 -</text>
+  </g>
+
+   <g id="page5" transform="translate(0, 4400)">
+    <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+    <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+    <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+    <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+    <text x="70" y="157" class="sectionTitle">2.3 エネルギーバランス分析</text>
+    <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+    <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <g transform="translate(70, 210)"> <foreignObject x="0" y="0" width="660" height="760">
+         <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+           <h3 style="font-size: 13px; color: #FFD700; font-weight: bold; margin-bottom: 10px;">【あなたの星のエネルギー】</h3>
+           <p>あなたの基本的なエネルギーパターンは、西洋占星術と四柱推命の両方の視点から見ると、非常に興味深い組み合わせを示しています。まず、太陽が牡牛座にあることから、あなたには安定性、忍耐力、そして実践的な側面が強く表れています。これは、物事をしっかりと地に足をつけて進める能力、そして五感を通じた豊かさや美しさを大切にする性質を示しています。</p>
+           <p>月が蟹座にあることで、あなたの感情面は豊かで直感的、そして人との繋がりや安心できる居場所を大切にする傾向があります。共感力が高く、周囲の人々の気持ちを敏感に察知します。記憶力も優れており、過去の経験から多くを学ぶことができます。感情の起伏はあるものの、それがあなたの深い人間性や創造性の源泉にもなっています。</p>
+           <p>天秤座のアセンダントは、あなたが外見的に調和を求め、公平さや美を大切にする人物として周囲に映ることを示しています。第一印象は穏やかで親しみやすく、洗練された社交的な雰囲気を持っています。人間関係においては、バランスを取り、平和的な解決を好むでしょう。</p>
+           <p>四柱推命では、日主が「甲（きのえ）」であることから、大樹のように天に向かってまっすぐに伸びようとする、強い向上心とリーダーシップの資質を持っています。新しいことを始めたり、目標に向かって突き進むエネルギーに満ちています。義理人情に厚く、責任感も強いでしょう。</p>
+           <p>五行のバランスを見ると、「火」と「水」のエネルギーが比較的強く、「木」がやや不足しています。「火」（表現力、情熱）と「水」（感受性、知性）が強いことは、あなたの創造性や直感力を高めますが、時に感情と行動の間で葛藤を生む可能性も示唆します。「木」の不足は、自己主張や新しい環境への適応において、意識的な努力が必要になる場面があるかもしれません。しかし、日主が「甲（木）」であるため、基本的な「木」のエネルギーは保持しています。</p>
+
+           <h3 style="font-size: 13px; color: #FFD700; font-weight: bold; margin-top: 30px; margin-bottom: 10px;">【二つの占術から見えるバランス】</h3>
+           <p>西洋占星術の安定志向で感覚的な「地」のエネルギー（牡牛座の太陽）と、社交的でバランス感覚に優れた「風」のエネルギー（天秤座のアセンダント）、そして感情豊かで共感的な「水」のエネルギー（蟹座の月）。これに四柱推命の「木」のリーダーシップ（甲の日主）と、比較的強い「火」と「水」の五行バランスが組み合わさることで、あなたの中には安定と変化、論理と感情、個人と集団といった、多様な要素が共存しています。</p>
+           <p>この複雑さが、あなたの多面的な魅力と深い人間性を形作っています。物事を着実に進める力と、新しいアイデアを生み出す情熱。人との調和を大切にする心と、自分の道を切り開く強さ。これらのバランスを意識的に取ることが、あなたの人生をより豊かにする鍵となります。</p>
+           <p>時に内的な葛藤を感じることもあるかもしれませんが、それはあなたが持つ豊かな可能性の表れです。安定を求める心と新しい挑戦への意欲、両方を大切にしながら、状況に応じて柔軟に対応していくことで、あなたは独自の才能を開花させることができるでしょう。</p>
+         </div>
+       </foreignObject>
+    </g>
+
+    <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+    <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+    <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+    <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 5 -</text>
+  </g>
+
+  <g id="page6" transform="translate(0, 5500)">
+      <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+      <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+      <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+      <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+      <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+      <text x="70" y="157" class="sectionTitle">3. 才能と人生のテーマ</text>
+      <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+      <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+      <g transform="translate(70, 210)"> <text y="0" class="cardTitle">3.1 あなたの主要な才能</text>
+          <g transform="translate(0, 30)">
+              <text y="0" class="label">才能 1:</text>
+              <text x="70" y="0" class="value">安定した基盤を築く能力</text>
+              <foreignObject x="70" y="15" width="590" height="40">
+                  <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(牡牛座の太陽): 物事を着実に進め、信頼できる環境を作り出す力。現実的な視点と忍耐力があります。</div>
+              </foreignObject>
+
+              <text y="65" class="label">才能 2:</text>
+              <text x="70" y="65" class="value">豊かな感受性と共感力</text>
+              <foreignObject x="70" y="80" width="590" height="40">
+                  <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(蟹座の月): 人の気持ちを理解し、深い繋がりを育む力。安心感を与える存在です。</div>
+              </foreignObject>
+
+              <text y="130" class="label">才能 3:</text>
+              <text x="70" y="130" class="value">バランス感覚と調和を生む力</text>
+              <foreignObject x="70" y="145" width="590" height="40">
+                   <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(天秤座のアセンダント): 公平な視点を持ち、人間関係や状況を円滑にする調整能力。美的感覚にも優れます。</div>
+              </foreignObject>
+
+              <text y="195" class="label">才能 4:</text>
+              <text x="70" y="195" class="value">目標達成に向けたリーダーシップ</text>
+              <foreignObject x="70" y="210" width="590" height="40">
+                  <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(甲の日主): 高い目標を掲げ、周囲を巻き込みながら前進する力。困難にも立ち向かう強さがあります。</div>
+              </foreignObject>
+
+              <text y="260" class="label">才能 5:</text>
+              <text x="70" y="260" class="value">直感力と創造的な表現力</text>
+               <foreignObject x="70" y="275" width="590" height="40">
+                  <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(火と水の五行): アイデアを形にし、情熱的に表現する力。インスピレーションを受け取りやすいでしょう。</div>
+              </foreignObject>
+          </g>
+           </g>
+
+      <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+      <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+      <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+      <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 6 -</text>
+  </g>
+
+   <g id="page7" transform="translate(0, 6600)">
+      <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+      <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+      <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+      <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+      <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+      <text x="70" y="157" class="sectionTitle">3.2 人生のテーマ</text>
+      <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+      <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+      <g transform="translate(70, 210)"> <foreignObject x="0" y="0" width="660" height="760">
+             <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+               <h3 style="font-size: 13px; color: #FFD700; font-weight: bold; margin-bottom: 10px;">【あなたの人生が探求する主要なテーマ】</h3>
+               <p>あなたの人生の物語は、「安定した基盤の上で、豊かな人間関係と自己表現を通じて、独自の価値を創造していく」というテーマを中心に展開していくでしょう。具体的には、以下の要素が重要な役割を果たします。</p>
+               <p><strong>1. 物質的な安定と精神的な豊かさの両立:</strong><br/>
+               牡牛座の太陽は、安全で快適な生活基盤を求めます。しかし、蟹座の月や天秤座のアセンダントは、物質的なものだけでなく、人との温かい繋がりや心の充足感、美しいものに囲まれる喜びも同様に重視します。あなたの人生では、これら二つの側面をバランス良く満たしていくことが、幸福感を得る上で重要になります。</p>
+               <p><strong>2. リーダーシップと協調性の統合:</strong><br/>
+               甲の日主は、あなたが自然とリーダー的な役割を担う可能性を示唆します。目標に向かって力強く進むエネルギーを持っていますが、一方で天秤座の性質は、他者との調和や公平性を重んじます。自分の意見を主張しながらも、周囲の意見に耳を傾け、協力して物事を成し遂げる。この「調和を導くリーダーシップ」を発揮することが、あなたの成功の鍵となるでしょう。</p>
+               <p><strong>3. 感情の力と創造性の発揮:</strong><br/>
+               蟹座の月と強い「火」「水」の五行は、あなたの豊かな感受性と創造力を示しています。感情を深く味わい、それをインスピレーションの源として、仕事や趣味、人間関係において独自の表現を追求していくことが、人生に彩りを与えます。ただし、感情の波に飲まれすぎないよう、牡牛座の現実感覚や天秤座の客観性を活かして、感情を建設的なエネルギーに変えていくことが課題となります。</p>
+               <p><strong>4. 安心できる「根」と新しい「枝葉」のバランス:</strong><br/>
+               安定を求める牡牛座・蟹座の性質と、成長・拡大を志向する甲（木）・天秤座の性質の間で、バランスを取ることが生涯のテーマとなり得ます。自分のルーツや大切にしている価値観（根）をしっかりと持ちながらも、新しい知識や経験、人間関係（枝葉）を恐れずに広げていく。このプロセスを通じて、あなたは着実に成長し、より大きな影響力を持つ存在となるでしょう。</p>
+               <p>これらのテーマを探求する中で、あなたは自分自身の内なる豊かさを発見し、それを周囲の世界と分かち合う喜びを見出すことができるはずです。</p>
+             </div>
+           </foreignObject>
+      </g>
+
+      <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+      <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+      <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+      <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 7 -</text>
+  </g>
+
+  <g id="page8" transform="translate(0, 7700)">
+       <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+      <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+      <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+      <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+      <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+      <text x="70" y="157" class="sectionTitle">3.3 成長のための課題</text>
+      <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+       <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+      <g transform="translate(70, 210)"> <text y="0" class="subHeading">あなたが成長するために取り組むべき課題:</text>
+           <g transform="translate(0, 30)">
+                <text y="0" class="label">課題 1:</text>
+                <text x="70" y="0" class="value">頑固さと変化への抵抗</text>
+                <foreignObject x="70" y="15" width="590" height="40">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(牡牛座の性質): 安定を求めるあまり、必要な変化や新しい視点を受け入れることに抵抗を感じやすいかもしれません。柔軟性を意識的に養うことが大切です。</div>
+                </foreignObject>
+
+                <text y="65" class="label">課題 2:</text>
+                <text x="70" y="65" class="value">感情の波と過剰な心配</text>
+                 <foreignObject x="70" y="80" width="590" height="40">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(蟹座の性質): 感受性が豊かな反面、感情に飲み込まれたり、未来に対して過度に心配したりする傾向も。客観的な視点を持つ練習が助けになります。</div>
+                </foreignObject>
+
+                <text y="130" class="label">課題 3:</text>
+                <text x="70" y="130" class="value">優柔不断さと他者評価への依存</text>
+                 <foreignObject x="70" y="145" width="590" height="40">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(天秤座の性質): バランスを重視するあまり、決断に時間がかかったり、他者の意見に影響されすぎたりすることがあります。自分の軸を確立することが課題です。</div>
+                </foreignObject>
+
+                <text y="195" class="label">課題 4:</text>
+                <text x="70" y="195" class="value">自己主張と計画性のバランス</text>
+                 <foreignObject x="70" y="210" width="590" height="40">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(甲と不足する木): リーダーシップを発揮する力はありますが、時に強引になったり、長期的な計画性において課題を感じたりするかもしれません。周囲との連携と計画性を意識しましょう。</div>
+                </foreignObject>
+
+                <text y="260" class="label">課題 5:</text>
+                <text x="70" y="260" class="value">安定希求と冒険心の葛藤</text>
+                 <foreignObject x="70" y="275" width="590" height="40">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px;">(牡牛座 vs 甲/火): 心地よい現状維持を望む気持ちと、新しいことに挑戦したい衝動との間で葛藤を感じやすいでしょう。このバランスを意識的に管理することが成長につながります。</div>
+                </foreignObject>
+            </g>
+      </g>
+
+      <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+      <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+      <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+      <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 8 -</text>
+  </g>
+
+   <g id="page9" transform="translate(0, 8800)">
+     <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+     <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+     <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+     <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+     <text x="70" y="157" class="sectionTitle">4. 運命の流れと転機</text>
+     <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+     <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <g transform="translate(70, 210)"> <text y="0" class="cardTitle">4.1 現在の運気傾向 (2025年前半)</text>
+          <foreignObject x="0" y="25" width="660" height="150">
+             <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+               <p>現在は、これまでの努力が形になり始め、安定した基盤を固める時期に入っています。特に仕事面では、あなたの着実さや信頼性が評価され、責任ある立場を任される可能性があります。ただし、木星の影響により、やや楽観的になりすぎたり、現状維持に甘んじてしまう傾向も。新しいスキル習得や自己投資を意識すると、さらなる発展につながります。対人関係では、深い信頼関係を築く好機ですが、感情的な行き違いには注意が必要です。</p>
+             </div>
+           </foreignObject>
+
+         <text y="190" class="cardTitle">4.2 今後の運気の流れ (2025年後半～2026年)</text>
+          <foreignObject x="0" y="215" width="660" height="150">
+             <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+               <p>今後1～2年は、キャリアにおける変化や新しい挑戦の機会が増えるでしょう。あなたのリーダーシップや創造性が求められる場面が多くなります。転職や独立を考えている場合は、具体的な準備を始めるのに良い時期です。ただし、土星の影響により、課題や責任も増大する可能性があります。計画性と粘り強さが試されるでしょう。プライベートでは、家族やパートナーとの関係性を見直し、より良いバランスを模索する時期となりそうです。</p>
+             </div>
+           </foreignObject>
+
+         <text y="380" class="cardTitle">4.3 人生の主要な転機</text>
+          <foreignObject x="0" y="405" width="660" height="350">
+             <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+                <h4 style="font-size: 12px; color: #9370DB; font-weight: bold; margin-bottom: 5px;">転機 1: 28歳頃 (2013年頃)</h4>
+                <p style="margin-left: 15px; margin-top: 0;">キャリアの方向性に大きな影響を与える出来事や出会いがあった可能性があります。自己認識が深まり、社会的な役割について考え始めた時期。</p>
+                <h4 style="font-size: 12px; color: #9370DB; font-weight: bold; margin-bottom: 5px; margin-top: 15px;">転機 2: 35歳頃 (2020年頃)</h4>
+                <p style="margin-left: 15px; margin-top: 0;">家庭やパートナーシップにおいて重要な変化があったか、あるいは自己価値観が大きく揺らぐ経験をした可能性があります。内面的な成長が促された時期。</p>
+                 <h4 style="font-size: 12px; color: #9370DB; font-weight: bold; margin-bottom: 5px; margin-top: 15px;">転機 3: 42歳頃 (2027年頃)</h4>
+                <p style="margin-left: 15px; margin-top: 0;">仕事や社会的な活動において、これまでの集大成ともいえる成果を上げるか、あるいは全く新しい分野への挑戦を開始する可能性があります。人生の目的意識が明確になる重要な時期。</p>
+                 <h4 style="font-size: 12px; color: #9370DB; font-weight: bold; margin-bottom: 5px; margin-top: 15px;">転機 4: 55歳頃 (2040年頃)</h4>
+                 <p style="margin-left: 15px; margin-top: 0;">人生の後半に向けた価値観の変化や、次世代への貢献について考える時期。精神的な探求や、新しい学びに関心が向かう可能性があります。</p>
+             </div>
+           </foreignObject>
+     </g>
+
+     <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+     <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 9 -</text>
+  </g>
+
+  <g id="page10" transform="translate(0, 9900)">
+     <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+     <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+     <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+     <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+     <text x="70" y="157" class="sectionTitle">6. 総合鑑定まとめ</text>
+     <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+     <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <g transform="translate(70, 210)"> <foreignObject x="0" y="0" width="660" height="450">
+             <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+                 <h3 style="font-size: 13px; color: #FFD700; font-weight: bold; margin-bottom: 10px;">【鑑定結果の要約】</h3>
+                 <p>山田太郎様、今回の鑑定では、あなたの持つ「安定と成長」「感情と論理」「リーダーシップと協調性」といった多様なエネルギーの組み合わせが明らかになりました。</p>
+                 <p>あなたは、牡牛座の太陽が示すように、<strong>着実に物事を進め、信頼できる基盤を築く力</strong>を持っています。同時に、蟹座の月は、<strong>深い共感力と豊かな感受性</strong>をあなたに与え、人との温かい繋がりを大切にする心を育んでいます。天秤座のアセンダントは、<strong>優れたバランス感覚と社交性</strong>をもたらし、周囲との調和を生み出す才能を示しています。</p>
+                 <p>四柱推命の観点からは、甲（木）の日主が、<strong>困難にも立ち向かう強い意志と向上心</strong>を象徴しています。五行のバランスは、<strong>情熱（火）と知性・感受性（水）</strong>が豊かであることを示しており、これがあなたの創造性や直感力の源泉となっています。</p>
+                 <p>あなたの人生のテーマは、これらの<strong>多様な資質を統合し、安定した土台の上で自己表現を行いながら、周囲との調和の中で独自の価値を創造していくこと</strong>にあります。キャリアにおいては、持ち前のリーダーシップと着実性を活かしつつ、協調性を意識することで、より大きな成功を収めることができるでしょう。人間関係においては、共感力を活かしながらも、感情に流されすぎず、バランスの取れた関係性を築くことが幸福につながります。</p>
+                 <p>成長のための課題としては、時に現れる<strong>頑固さや変化への抵抗、感情の波、決断における迷い</strong>などを認識し、意識的に柔軟性や客観性、自己肯定感を養っていくことが挙げられます。</p>
+             </div>
+         </foreignObject>
+
+         <text y="480" class="cardTitle">今後に向けてのアドバイス</text>
+          <foreignObject x="0" y="505" width="660" height="250">
+             <div xmlns="http://www.w3.org/1999/xhtml" class="bodyText" style="color: #F8F8FF; font-size: 11px; line-height: 1.6;">
+                 <p>この鑑定書は、あなたの可能性を最大限に引き出すための羅針盤です。書かれている内容は決定された未来ではなく、あなたがより良く生きるためのヒントとしてご活用ください。</p>
+                 <p>・<strong>自己理解を深める:</strong> 定期的にこの鑑定書を読み返し、ご自身の経験と照らし合わせることで、新たな気づきが得られるでしょう。</p>
+                 <p>・<strong>強みを活かす:</strong> あなたの持つ才能（安定構築力、共感力、バランス感覚、リーダーシップ、創造性など）を意識的に日々の生活や仕事で活かす場面を増やしましょう。</p>
+                 <p>・<strong>課題と向き合う:</strong> 成長の課題として挙げられた点（頑固さ、感情の波など）を認識し、少しずつ改善していく努力が、あなたをさらに成長させます。</p>
+                 <p>・<strong>運気の波を知る:</strong> 365日占いを参考に、日々のエネルギーの流れを意識することで、より賢明な判断や行動選択が可能になります。</p>
+                 <p>あなたの人生が、この鑑定を通じて、より一層輝き、充実したものとなることを心より願っております。</p>
+             </div>
+         </foreignObject>
+     </g>
+
+      <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+     <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 10 -</text>
+  </g>
+
+   <g id="page11" transform="translate(0, 11000)">
+     <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+     <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+     <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+     <rect x="50" y="130" width="700" height="40" fill="url(#sectionHeaderGradient)" />
+     <text x="70" y="157" class="sectionTitle">7. 365日運勢カレンダー</text>
+     <use href="#starSymbol" x="715" y="138" width="25" height="25"/>
+
+     <rect x="50" y="190" width="700" height="800" rx="5" fill="url(#cardGradient)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <g transform="translate(70, 210)"> <text y="0" class="cardTitle">7.1 月別運勢ガイド</text>
+         <text x="0" y="25" class="bodyText">各月の運勢概要です。詳細な日別予報は次ページ以降をご覧ください。</text>
+
+         <g transform="translate(0, 60)">
+              <text y="0" class="label" font-size="12">2025年5月</text>
+              <foreignObject x="10" y="20" width="640" height="50">
+                 <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px; line-height: 1.5;">
+                    新しいサイクルの始まり。特に上旬は、太陽と木星の好調な配置により、前向きな発展が期待できます。自分の強みを活かせる機会が増え、特に仕事面では注目を集めるでしょう。中旬以降はコミュニケーションが円滑に。
+                 </div>
+              </foreignObject>
+
+              <text y="80" class="label" font-size="12">2025年6月</text>
+              <foreignObject x="10" y="100" width="640" height="50">
+                 <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px; line-height: 1.5;">
+                    金運と対人運が特に好調な月。経済的な面で思わぬ収入や良い機会が訪れる可能性。人との縁も強まり、有益な人脈が広がる時期です。アイデアや提案を積極的に発信しましょう。ただし健康面、特に休息に注意。
+                 </div>
+               </foreignObject>
+
+               <text y="160" class="label" font-size="12">2025年7月</text>
+               <foreignObject x="10" y="180" width="640" height="50">
+                 <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px; line-height: 1.5;">
+                    内省と計画の月。特に前半は自分自身を見つめ直し、今後の方向性を考える良い機会です。新しいスキルの習得や自己啓発にも適した時期となります。焦らず、じっくりと内面と向き合いましょう。
+                 </div>
+               </foreignObject>
+
+               <text y="240" class="label" font-size="12">2025年8月</text>
+                <foreignObject x="10" y="260" width="640" height="50">
+                 <div xmlns="http://www.w3.org/1999/xhtml" class="smallText" style="color: #F8F8FF; font-size: 10px; line-height: 1.5;">
+                    行動力がアップし、エネルギッシュに活動できる月。夏らしいレジャーや趣味を楽しむのにも最適です。ただし、火星の影響で衝動的になりやすい側面も。計画性を持って行動することを心がけてください。
+                 </div>
+               </foreignObject>
+         </g>
+     </g>
+
+      <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+     <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 11 -</text>
+  </g>
+
+  <g id="page12" transform="translate(0, 12100)">
+      <rect x="0" y="50" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <rect x="50" y="70" width="50" height="20" fill="#FFD700" opacity="0.5"/>
+     <text x="110" y="88" font-size="14" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+     <line x1="50" y1="110" x2="750" y2="110" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+
+     <text x="400" y="160" font-size="16" font-weight="bold" fill="#FFD700" text-anchor="middle">2025年5月の日別運勢</text>
+
+     <g id="daily-table-may" transform="translate(50, 200)">
+       <rect x="0" y="0" width="700" height="30" fill="rgba(72, 61, 139, 0.8)" />
+       <text x="5" y="20" font-size="10" font-weight="bold" fill="#FFD700">日付</text>
+       <text x="85" y="20" font-size="10" font-weight="bold" fill="#FFD700">運気</text>
+       <text x="165" y="20" font-size="10" font-weight="bold" fill="#FFD700">運勢</text>
+       <line x1="80" y1="0" x2="80" y2="30" stroke="rgba(255, 215, 0, 0.3)" />
+       <line x1="160" y1="0" x2="160" y2="30" stroke="rgba(255, 215, 0, 0.3)" />
+
+       <g transform="translate(0, 30)">
+         <rect x="0" y="0" width="700" height="25" fill="rgba(25, 25, 112, 0.5)" />
+         <text x="5" y="17" class="smallText">1日(木)</text>
+         <text x="85" y="17" class="smallText" fill="#FFD700">★★★★☆</text>
+         <text x="165" y="17" class="smallText">新しいスタートに適した日。意欲的に行動しましょう。</text>
+         <line x1="80" y1="0" x2="80" y2="25" stroke="rgba(255, 215, 0, 0.3)" />
+         <line x1="160" y1="0" x2="160" y2="25" stroke="rgba(255, 215, 0, 0.3)" />
+         <rect x="0" y="25" width="700" height="25" fill="rgba(25, 25, 112, 0.7)" />
+         <text x="5" y="42" class="smallText">2日(金)</text>
+         <text x="85" y="42" class="smallText" fill="#FFD700">★★★☆☆</text>
+         <text x="165" y="42" class="smallText">コミュニケーションに注意。誤解が生じやすい日です。</text>
+          <line x1="80" y1="25" x2="80" y2="50" stroke="rgba(255, 215, 0, 0.3)" />
+         <line x1="160" y1="25" x2="160" y2="50" stroke="rgba(255, 215, 0, 0.3)" />
+         <rect x="0" y="50" width="700" height="25" fill="rgba(25, 25, 112, 0.5)" />
+         <text x="5" y="67" class="smallText">3日(土)</text>
+         <text x="85" y="67" class="smallText" fill="#FFD700">★★★★★</text>
+         <text x="165" y="67" class="smallText">金運絶好調！臨時収入や思わぬ贈り物がある予感。</text>
+         <line x1="80" y1="50" x2="80" y2="75" stroke="rgba(255, 215, 0, 0.3)" />
+         <line x1="160" y1="50" x2="160" y2="75" stroke="rgba(255, 215, 0, 0.3)" />
+          <rect x="0" y="75" width="700" height="25" fill="rgba(25, 25, 112, 0.7)" />
+         <text x="5" y="92" class="smallText">4日(日)</text>
+         <text x="85" y="92" class="smallText" fill="#FFD700">★★★★☆</text>
+         <text x="165" y="92" class="smallText">人間関係が円滑に。新しい出会いが将来の糧になります。</text>
+         <line x1="80" y1="75" x2="80" y2="100" stroke="rgba(255, 215, 0, 0.3)" />
+         <line x1="160" y1="75" x2="160" y2="100" stroke="rgba(255, 215, 0, 0.3)" />
+          <rect x="0" y="100" width="700" height="25" fill="rgba(25, 25, 112, 0.5)" />
+         <text x="5" y="117" class="smallText">5日(月)</text>
+         <text x="85" y="117" class="smallText" fill="#FFD700">★★★☆☆</text>
+         <text x="165" y="117" class="smallText">家族との時間を大切に。小さな喜びを共有しましょう。</text>
+          <line x1="80" y1="100" x2="80" y2="125" stroke="rgba(255, 215, 0, 0.3)" />
+         <line x1="160" y1="100" x2="160" y2="125" stroke="rgba(255, 215, 0, 0.3)" />
+         <rect x="0" y="750" width="700" height="25" fill="rgba(25, 25, 112, 0.5)" />
+         <text x="5" y="767" class="smallText">31日(土)</text>
+         <text x="85" y="767" class="smallText" fill="#FFD700">★★★★☆</text>
+         <text x="165" y="767" class="smallText">月末の締めくくり。計画の見直しと整理に良い日。</text>
+         <line x1="80" y1="750" x2="80" y2="775" stroke="rgba(255, 215, 0, 0.3)" />
+         <line x1="160" y1="750" x2="160" y2="775" stroke="rgba(255, 215, 0, 0.3)" />
+       </g>
+     </g>
+
+      <rect x="0" y="1040" width="800" height="60" fill="url(#headerFooterGradient)" />
+     <line x1="50" y1="1040" x2="750" y2="1040" stroke="rgba(255, 215, 0, 0.3)" stroke-width="1" />
+     <text x="400" y="1065" class="smallText" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術 All Rights Reserved.</text>
+     <text x="400" y="1085" font-size="10" font-weight="bold" fill="#F8F8FF" text-anchor="middle">- 12 -</text>
+  </g>
+  </svg>
