@@ -43,6 +43,8 @@ payment_system:
     - pay.jpのJavaScriptSDK遅延読み込み
     - カード情報のトークン化
     - 決済処理（サーバーサイド）
+    - 支払い作成時の3Dセキュア認証（必要な場合）
+    - 3Dセキュア認証完了後の決済確定処理
     - 決済情報のKVストアへの保存（30日TTL）
     - 決済成功後のPDF生成リクエスト自動送信
     - PDF生成ジョブ進捗管理と通知
@@ -51,8 +53,21 @@ payment_system:
   security:
     - PCI DSS準拠のpay.jpトークン化による非保持化
     - HTTPSによる通信暗号化
+    - 3Dセキュア認証による不正利用防止
     - 適切なCORS設定
     - 環境変数によるAPIキー管理
+
+  three_d_secure:
+    implementation: 支払い作成時（charge作成時）の3Dセキュア認証を使用
+    deprecated: トークン作成時の3Dセキュア（非推奨）
+    workflows:
+      - サブウィンドウ方式（デフォルト）
+      - リダイレクト方式（フォールバック）
+    status_handling:
+      - unverified: 認証が必要
+      - verified: 認証完了
+      - attempted: 認証試行（カード発行会社が完全な認証をサポートしていない場合）
+      - error: 認証エラー
 
 # PDF生成システム
 pdf_generation:
@@ -79,6 +94,10 @@ components:
       purpose: Pay.jp APIを使用した決済処理と成功時のPDF生成リクエスト
       features:
         - トークンによる決済処理
+        - 支払い作成時の3Dセキュア認証処理
+        - 3Dセキュアステータス確認と完了処理
+        - 与信枠確保のみの処理（authOnly）
+        - 与信枠の確定・解放処理
         - ユーザーデータ検証
         - 決済情報のKV保存
         - PDF生成リクエスト自動送信
@@ -108,7 +127,16 @@ components:
     - name: payjp-api.js
       purpose: Pay.jp API連携ラッパー
       features:
-        - 決済作成
+        - 決済作成（createCharge）
+        - 与信枠確保（createAuthorization）
+        - 支払い確定（capturePayment）
+        - 与信枠解放（releaseAuthorization）
+        - 支払い時3Dセキュア関連機能（推奨）：
+          - 3Dセキュアステータス確認（checkCharge3DSecureStatus）
+          - 3Dセキュア認証URL生成（generateCharge3DSecureUrl）
+          - 3Dセキュア認証完了処理（completeCharge3DSecure）
+          - 3Dセキュアサブウィンドウ設定取得（getCharge3DSecureSubWindowUrl）
+        - トークン時3Dセキュア関連機能（非推奨）
         - エラーハンドリング
 
     - name: kv-store.js

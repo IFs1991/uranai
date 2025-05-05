@@ -21,6 +21,34 @@ frontend:
       - 入力値のバリデーション
       - Pay.jpへの送信とトークン取得
       - トークンの一時保持（非永続）
+    three_d_secure:
+      enabled: true
+      workflow: subwindow
+      required_fields:
+        - name: カード名義（ローマ字）
+        - email: メールアドレス
+        - phone: 電話番号（任意、メールがある場合）
+      implementation:
+        payjp_js: |
+          payjp.createToken(cardElement, {
+            three_d_secure: true,
+            card: {
+              name: name,
+              email: email,
+              phone: phone
+            }
+          })
+        checkout: |
+          <script
+            type="text/javascript"
+            src="https://checkout.pay.jp/"
+            class="payjp-button"
+            data-payjp-key="PAYJP_PUBLIC_KEY"
+            data-payjp-three-d-secure="true"
+            data-payjp-three-d-secure-workflow="subwindow"
+            data-payjp-extra-attribute-email
+            data-payjp-extra-attribute-phone
+          ></script>
 
   payment_form:
     required_fields:
@@ -66,6 +94,28 @@ backend:
       description: 確保された与信枠の解放
       path_params:
         chargeId: 与信枠IDをパスに含める
+
+    check_3d_secure:
+      path: /api/process-payment/check-3d-secure/{tokenId}
+      method: GET
+      description: 3Dセキュアステータスの確認
+      path_params:
+        tokenId: Pay.jpトークンID
+
+    authorize_3d_secure:
+      path: /api/process-payment/authorize-3d-secure
+      method: POST
+      description: 3Dセキュア認証を開始するURL生成
+      request_body:
+        tokenId: Pay.jpトークンID
+        returnUrl: 認証後のリダイレクト先URL
+
+    complete_3d_secure:
+      path: /api/process-payment/complete-3d-secure/{tokenId}
+      method: POST
+      description: 3Dセキュア認証の完了処理
+      path_params:
+        tokenId: Pay.jpトークンID
 
   request_body:
     token: Pay.jpで生成されたトークン
@@ -119,6 +169,30 @@ backend:
         parameters:
           chargeId: 与信枠が確保された支払いID
 
+      getTokenDetails:
+        description: トークンの詳細情報を取得
+        parameters:
+          tokenId: Pay.jpトークンID
+
+      check3DSecureStatus:
+        description: 3Dセキュア認証が必要なトークンのステータスを確認
+        parameters:
+          tokenId: Pay.jpトークンID
+        return_value: 3Dセキュアステータス情報（status, needsAuth, redirectUrl）
+
+      generate3DSecureUrl:
+        description: 3Dセキュア認証用のリダイレクトURLを生成
+        parameters:
+          tokenId: Pay.jpトークンID
+          returnUrl: 認証後のリダイレクト先URL
+        return_value: 3Dセキュア認証用のURL
+
+      complete3DSecure:
+        description: 3Dセキュア認証完了処理を行う
+        parameters:
+          tokenId: Pay.jpトークンID
+        return_value: 完了後のトークン情報
+
   timeout_handling:
     duration: 15000 # 15秒
     strategy: Promise.race
@@ -132,6 +206,14 @@ backend:
           message: 決済が完了しました。PDF生成を開始します。
           paymentId: Pay.jpの決済ID
           transactionId: 内部生成のトランザクションID
+      needs_3d_secure:
+        status_code: 202
+        body:
+          success: false
+          needsThreeDSecure: true
+          tokenId: Pay.jpのトークンID
+          threeDSecureStatus: 3Dセキュアステータス情報
+          message: 3Dセキュア認証が必要です。認証を完了後、決済を続行してください。
 
     authorization_only:
       success:
@@ -142,6 +224,14 @@ backend:
           authorizationId: 与信枠確保ID
           transactionId: 内部生成のトランザクションID
           expiryDays: 有効期限（日数）
+      needs_3d_secure:
+        status_code: 202
+        body:
+          success: false
+          needsThreeDSecure: true
+          tokenId: Pay.jpのトークンID
+          threeDSecureStatus: 3Dセキュアステータス情報
+          message: 3Dセキュア認証が必要です。認証を完了後、与信枠確保を続行してください。
 
     capture_payment:
       success:
@@ -163,6 +253,31 @@ backend:
           chargeId: 解放された与信枠ID
           refundedAmount: 解放された金額
 
+    check_3d_secure:
+      success:
+        status_code: 200
+        body:
+          success: true
+          tokenId: Pay.jpのトークンID
+          threeDSecureStatus: 3Dセキュアステータス情報
+
+    authorize_3d_secure:
+      success:
+        status_code: 200
+        body:
+          success: true
+          tokenId: Pay.jpのトークンID
+          authUrl: 3Dセキュア認証ページURL
+
+    complete_3d_secure:
+      success:
+        status_code: 200
+        body:
+          success: true
+          tokenId: Pay.jpのトークンID
+          threeDSecureStatus: 完了後の3Dセキュアステータス
+          completedToken: 完了後のトークン情報
+
     error:
       validation_error:
         status_code: 400
@@ -179,6 +294,9 @@ backend:
       server_error:
         status_code: 500
         message: 決済処理中にサーバー内部エラーが発生しました
+      threeDSecureError:
+        status_code: 400
+        message: 3Dセキュア認証でエラーが発生しました
 
 # KVストア連携
 kv_storage:
@@ -207,6 +325,19 @@ kv_storage:
         expiryDate: 有効期限日時（ISO形式）
       ttl: 5184000 # 最大60日（秒）
 
+    threeDSecureSession:
+      key_format: 3dsession:{token_id}
+      value:
+        tokenId: Pay.jpトークンID
+        userData: ユーザー情報
+        amount: 金額
+        currency: 通貨
+        description: 説明
+        authOnly: 与信枠確保のみフラグ
+        expiryDays: 与信枠有効期限（与信枠確保の場合）
+        timestamp: 作成日時（ISO形式）
+      ttl: 3600 # 1時間（秒）
+
 # 自動PDF生成リクエスト
 auto_pdf_generation:
   enabled: true
@@ -231,6 +362,16 @@ security:
   api_key_storage: 環境変数
   input_validation: サーバーサイドでの検証
   error_messages: 本番環境では詳細エラーを非表示
+  three_d_secure:
+    enabled: true
+    workflow: subwindow
+    fallback: サブウィンドウが開けない環境ではリダイレクト型に切り替え
+    status_handling:
+      verified: 完全な認証成功
+      attempted: 認証試行（完全認証できない場合でも続行可能）
+      unverified: 未認証
+      error: 認証エラー
+    configuration: 管理画面 > API設定 > 3Dセキュア で設定可能
 
 # 開発・テスト環境
 development:
@@ -345,6 +486,7 @@ development:
     - トークン化テストと決済テストは常にセットで行う
     - エラー処理のテストには該当するテストカードを使用する
     - 3Dセキュア対応のテストは特殊なテストケースで行う
+    - 3Dセキュアを行うためのテストカードはないため、three_d_secure オプションが指定されると全てのテストカードで3Dセキュア処理が行われる
 
 # 動作フロー
 flow_examples:
@@ -372,6 +514,25 @@ flow_examples:
       - PDF生成リクエストを自動実行
       - クライアントに結果を返却
 
+  three_d_secure_flow:
+    description: 3Dセキュア認証を含む決済フロー
+    steps:
+      - フロントエンドでカード情報と追加項目（名義・メールアドレス）を入力
+      - 3Dセキュアオプションを有効にしてトークン化
+      - サーバーに決済リクエスト（token, userData）を送信
+      - サーバーがトークンの3Dセキュアステータスを確認
+      - ステータスが「unverified」の場合、クライアントに3Dセキュア認証が必要との応答
+      - クライアントが3Dセキュア認証URLの生成をリクエスト
+      - ユーザーをカード会社の3Dセキュア認証画面にリダイレクト
+      - ユーザーが認証を完了し、リダイレクト先URLに戻る
+      - クライアントがサーバーに3Dセキュア認証完了を通知
+      - サーバーがPay.jpで3Dセキュア完了処理
+      - 認証完了後、元の決済または与信枠確保処理を実行
+      - 決済情報をKVストアに保存
+      - PDF生成リクエストを自動実行
+      - クライアントに結果を返却
+    note: サブウィンドウ型の場合はトークン化と同時に認証が完了するため、サーバー側での追加処理は不要
+
 # 利用シナリオ
 use_cases:
   - title: 即時決済
@@ -386,4 +547,217 @@ use_cases:
     description: 与信枠確保後、確定時に金額を調整（元の金額以下）
     flow_type: two_step_payment
     notes: capturePaymentでamountパラメータを指定
----
+
+  - title: 3Dセキュア認証付き決済
+    description: セキュリティ強化のためカード所有者認証を追加
+    flow_type: three_d_secure_flow
+    notes: フィッシング詐欺対策や不正利用防止に効果的
+
+# 3Dセキュア認証：トークンベース（非推奨）
+three_d_secure_token_based:
+  deprecated: true
+  description: "トークン作成時の3Dセキュアは非推奨です。代わりに支払い作成時の3Dセキュア認証を使用してください。"
+  frontend_implementation:
+    checkout_sdk:
+      deprecated: true
+      note: "トークン作成時の3Dセキュアは非推奨です。代わりに支払い作成時（charge作成時）の3Dセキュアを使用してください。"
+    payjp_js_sdk:
+      deprecated: true
+      note: "トークン作成時の3Dセキュアは非推奨です。代わりに支払い作成時（charge作成時）の3Dセキュアを使用してください。"
+    mobile_sdk:
+      deprecated: true
+      note: "トークン作成時の3Dセキュアは非推奨です。代わりに支払い作成時（charge作成時）の3Dセキュアを使用してください。"
+
+# 3Dセキュア認証：支払い作成時（推奨）
+payment_3d_secure:
+  description: "支払い作成時（charge作成時）の3Dセキュア認証。これは推奨される実装方法です。"
+  frontend_implementation:
+    checkout_sdk:
+      example: |
+        // Checkoutを使用した3Dセキュア認証付き支払い
+        const checkout = new PayjpCheckout({
+          publicKey: 'pk_test_xxxx',
+          // 支払い完了時のコールバック
+          onCompleted: (result) => {
+            if (result.error) {
+              console.error(result.error);
+              // エラー処理
+            } else {
+              // 支払い成功
+              console.log('支払いID:', result.id);
+              if (result.card) {
+                console.log('カード情報:', result.card.brand, result.card.last4);
+              }
+            }
+          }
+        });
+
+        // 3Dセキュア認証付き支払いを開始
+        checkout.createPayment({
+          amount: 1000,
+          currency: 'jpy',
+          threeDSecure: true,  // 3Dセキュア認証を有効化
+          name: 'カード名義人',
+          email: 'test@example.com',
+          description: '商品の説明'
+        });
+    payjp_js_sdk:
+      example: |
+        // PayjpのJSライブラリを使用
+        const payjp = Payjp('pk_test_xxxx');
+
+        // 支払いを作成
+        async function createPayment() {
+          try {
+            // 支払い作成APIを呼び出し
+            const response = await fetch('/api/create-payment', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                amount: 1000,
+                currency: 'jpy',
+                threeDSecure: true,  // 3Dセキュア認証を有効化
+                name: 'カード名義人',
+                email: 'test@example.com'
+              })
+            });
+
+            const result = await response.json();
+
+            if (result.threeDSecureStatus === 'unverified') {
+              // 3Dセキュア認証が必要な場合
+              if (result.threeDSecureUrl) {
+                // サブウィンドウでの認証
+                payjp.threeDSecure.subWindow({
+                  url: result.threeDSecureUrl,
+                  callback: onThreeDSecureComplete
+                });
+                // または、リダイレクトでの認証
+                // window.location.href = result.threeDSecureUrl;
+              }
+            } else {
+              // 3Dセキュア認証が不要または既に完了している場合
+              onPaymentComplete(result);
+            }
+          } catch (error) {
+            console.error('支払い作成エラー:', error);
+          }
+        }
+
+        // 3Dセキュア認証完了後のコールバック
+        function onThreeDSecureComplete(result) {
+          if (result.success) {
+            // 3Dセキュア認証成功
+            onPaymentComplete(result.payment);
+          } else {
+            // 3Dセキュア認証失敗
+            console.error('3Dセキュア認証エラー:', result.error);
+          }
+        }
+
+        // 支払い完了時の処理
+        function onPaymentComplete(payment) {
+          console.log('支払い完了:', payment.id);
+        }
+    mobile_sdk:
+      example: |
+        // モバイルSDKでの3Dセキュア認証付き支払い作成の例（Android - Kotlin）
+
+        // 支払い作成リクエスト
+        val threeDSecureParams = ThreeDSecureParams(
+          name = "カード名義人",
+          email = "test@example.com"
+        )
+
+        PayjpApi.createPayment(
+          context = context,
+          amount = 1000,
+          currency = "jpy",
+          threeDSecure = true,  // 3Dセキュア認証を有効化
+          threeDSecureParams = threeDSecureParams,
+          onSuccess = { payment ->
+            // 支払い成功時の処理
+            Log.d("Payment", "Success: ${payment.id}")
+          },
+          onError = { exception ->
+            // エラー時の処理
+            Log.e("Payment", "Error: ${exception.message}")
+          },
+          on3DSecureRequired = { url, payment ->
+            // 3Dセキュア認証が必要な場合、認証ページを表示
+            // WebViewで認証URLを開く
+            showWebView(url, payment.id)
+          }
+        )
+
+        // WebViewでの3Dセキュア認証完了後のコールバック
+        fun onThreeDSecureCompleted(paymentId: String) {
+          // 支払い状態を確認
+          PayjpApi.getPayment(
+            paymentId = paymentId,
+            onSuccess = { payment ->
+              if (payment.status == "succeeded") {
+                // 支払い完了
+                Log.d("Payment", "3D Secure completed successfully")
+              } else {
+                // 支払い失敗
+                Log.e("Payment", "Payment failed after 3D Secure")
+              }
+            },
+            onError = { exception ->
+              Log.e("Payment", "Error checking payment: ${exception.message}")
+            }
+          )
+        }
+
+# 3Dセキュア認証フロー図（支払い作成時）
+# 注: トークン作成時の3Dセキュアは非推奨です。代わりに以下の支払い作成時の3Dセキュア認証フローを使用してください。
+payment_3d_secure_flow:
+  description: |
+    3Dセキュア認証フロー（支払い作成時）：
+    1. クライアントが支払い情報とともに3Dセキュア有効フラグを送信
+    2. サーバーが支払いを作成し、3Dセキュア認証が必要か確認
+    3. 3Dセキュア認証が必要な場合、認証URLを返す
+    4. クライアントが認証URLで3Dセキュア認証を実行（サブウィンドウまたはリダイレクト）
+    5. 認証完了後、サーバーが支払い完了処理を実行
+    6. クライアントに支払い結果を返す
+
+  flow_diagram: |
+    ┌─────────┐                 ┌─────────┐               ┌────────┐              ┌─────────────┐
+    │ クライアント │                 │ アプリサーバー │               │ Pay.jp  │              │ 3Dセキュアサーバー │
+    └─────┬───┘                 └─────┬───┘               └────┬───┘              └───────┬─────┘
+          │                           │                        │                         │
+          │ 支払い作成リクエスト(3DS=true)│                        │                         │
+          │ ────────────────> │                        │                         │
+          │                           │                        │                         │
+          │                           │ 支払い作成(3DS=true)   │                         │
+          │                           │ ────────────────> │                         │
+          │                           │                        │                         │
+          │                           │                        │ 3Dセキュア認証が必要     │
+          │                           │                        │ ──────────────────> │
+          │                           │                        │                         │
+          │                           │ 支払い作成結果(3DS=unverified) │                │
+          │                           │ <───────────────── │                         │
+          │                           │                        │                         │
+          │ 3Dセキュア認証URL        │                        │                         │
+          │ <───────────────── │                        │                         │
+          │                           │                        │                         │
+          │ 3Dセキュア認証ページにリダイレクト │                 │                         │
+          │ ─────────────────────────────────────────────────> │
+          │                           │                        │                         │
+          │ <───────────────────────────────────────────────── │
+          │ カード発行会社認証ページ   │                        │                         │
+          │                           │                        │                         │
+          │ 認証完了後のリダイレクト   │                        │                         │
+          │ ────────────────> │                        │                         │
+          │                           │                        │                         │
+          │                           │ 支払い完了処理         │                         │
+          │                           │ ────────────────> │                         │
+          │                           │                        │                         │
+          │                           │ 支払い完了結果(3DS=verified) │                  │
+          │                           │ <───────────────── │                         │
+          │                           │                        │                         │
+          │ 支払い完了通知            │                        │                         │
+          │ <───────────────── │                        │                         │
+          │                           │                        │                         │
+</code_block_to_apply_changes_from>

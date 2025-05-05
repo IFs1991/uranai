@@ -20,8 +20,8 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
   let page; // ブラウザページオブジェクト
   let browser; // ブラウザオブジェクト
 
-  // 与信枠IDを保持する変数（確保→確定のフローで使用）
-  let authorizationId;
+  // 与信枠IDと認証トークンを保持する変数
+  let chargeId;
 
   beforeEach(async () => {
     // モック用のページオブジェクト
@@ -52,8 +52,8 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
         if (typeof urlOrPredicate === 'function') {
           const mockedUrl = {
             includes: (path) => {
-              if (path === '/api/auth/create') return true;
-              if (path === '/api/auth/capture') return true;
+              if (path === '/api/processAuthorization') return true;
+              if (path === '/api/capturePayment') return true;
               if (path === '/api/generate-pdf') return true;
               return false;
             }
@@ -62,22 +62,43 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
           const predicate = urlOrPredicate({ url: () => mockedUrl });
 
           if (predicate) {
-            if (mockedUrl.includes('/api/auth/create')) {
-              authorizationId = 'auth_test_' + Date.now();
+            if (mockedUrl.includes('/api/processAuthorization')) {
+              chargeId = 'ch_test_' + Date.now();
+              const mockCharge = {
+                id: chargeId,
+                object: 'charge',
+                amount: 10000,
+                currency: 'jpy',
+                description: 'ライフサイクル・ポテンシャル占術 詳細鑑定PDF（与信枠確保）',
+                captured: false,
+                paid: true,
+                status: 'pending',
+                created: Date.now() / 1000,
+                expired_at: null
+              };
+
               return {
                 status: vi.fn().mockReturnValue(200),
                 json: vi.fn().mockResolvedValue({
                   success: true,
-                  authorizationId: authorizationId,
-                  transactionId: 'trans_' + Date.now()
+                  charge: mockCharge,
+                  chargeId: chargeId,
+                  captured: false,
+                  paid: true
                 })
               };
-            } else if (mockedUrl.includes('/api/auth/capture')) {
+            } else if (mockedUrl.includes('/api/capturePayment')) {
               return {
                 status: vi.fn().mockReturnValue(200),
                 json: vi.fn().mockResolvedValue({
                   success: true,
-                  paymentId: authorizationId,
+                  charge: {
+                    id: chargeId,
+                    amount: 10000,
+                    captured: true,
+                    paid: true
+                  },
+                  chargeId: chargeId,
                   capturedAmount: 10000
                 })
               };
@@ -146,27 +167,48 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
 
     // fetchのモック
     global.fetch = vi.fn().mockImplementation(async (url, options) => {
-      if (url.includes('/api/auth/create')) {
-        authorizationId = 'auth_test_' + Date.now();
+      if (url.includes('/api/processAuthorization')) {
+        chargeId = 'ch_test_' + Date.now();
+        const mockCharge = {
+          id: chargeId,
+          object: 'charge',
+          amount: 10000,
+          currency: 'jpy',
+          description: 'ライフサイクル・ポテンシャル占術 詳細鑑定PDF（与信枠確保）',
+          captured: false,
+          paid: true,
+          status: 'pending',
+          created: Date.now() / 1000,
+          expired_at: null
+        };
+
         return {
           ok: true,
           status: 200,
           json: async () => ({
             success: true,
-            authorizationId: authorizationId,
-            transactionId: 'trans_' + Date.now(),
+            charge: mockCharge,
+            chargeId: chargeId,
+            captured: false,
+            paid: true,
             message: '与信枠を確保しました'
           })
         };
       }
 
-      if (url.includes('/api/auth/capture')) {
+      if (url.includes('/api/capturePayment')) {
         return {
           ok: true,
           status: 200,
           json: async () => ({
             success: true,
-            paymentId: authorizationId,
+            charge: {
+              id: chargeId,
+              amount: 10000,
+              captured: true,
+              paid: true
+            },
+            chargeId: chargeId,
             capturedAmount: 10000,
             message: '与信枠を確定しました'
           })
@@ -242,15 +284,17 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
 
     // 7. 与信枠確保APIのレスポンスを待つ
     const authResponse = await page.waitForResponse(
-      (response) => response.url().includes('/api/auth/create')
+      (response) => response.url().includes('/api/processAuthorization')
     );
     expect(await authResponse.status()).toBe(200);
     const authData = await authResponse.json();
     expect(authData.success).toBe(true);
-    expect(authData.authorizationId).toBeDefined();
+    expect(authData.chargeId).toBeDefined();
+    expect(authData.captured).toBe(false);
+    expect(authData.paid).toBe(true);
 
-    // 与信枠IDを保存（このテストではすでにmock内で設定済み）
-    const authorizationId = authData.authorizationId;
+    // 与信枠IDを保存
+    const currentChargeId = authData.chargeId;
 
     // 8. 与信枠確保後の状態表示を確認
     await page.waitForSelector('#auth-status');
@@ -260,12 +304,13 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
 
     // 10. 与信枠確定APIのレスポンスを待つ
     const captureResponse = await page.waitForResponse(
-      (response) => response.url().includes('/api/auth/capture')
+      (response) => response.url().includes('/api/capturePayment')
     );
     expect(await captureResponse.status()).toBe(200);
     const captureData = await captureResponse.json();
     expect(captureData.success).toBe(true);
-    expect(captureData.paymentId).toBe(authorizationId);
+    expect(captureData.chargeId).toBe(currentChargeId);
+    expect(captureData.capturedAmount).toBe(10000);
 
     // 11. PDF生成リクエストのレスポンスを待つ
     const pdfGenResponse = await page.waitForResponse(
@@ -335,8 +380,12 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
 
     // 7. 与信枠確保APIのレスポンスを待つ
     const authResponse = await page.waitForResponse(
-      (response) => response.url().includes('/api/auth/create')
+      (response) => response.url().includes('/api/processAuthorization')
     );
+    expect(await authResponse.status()).toBe(200);
+    const authData = await authResponse.json();
+    expect(authData.success).toBe(true);
+    expect(authData.chargeId).toBeDefined();
 
     // 8. 与信枠確保後の状態表示を確認
     await page.waitForSelector('#auth-status');
@@ -353,7 +402,7 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
           status: 200,
           json: async () => ({
             success: true,
-            authorizationId: authorizationId,
+            chargeId: chargeId,
             refundedAmount: 10000,
             message: '与信枠を解放しました'
           })
@@ -369,6 +418,8 @@ describe('与信枠確保→確定のワークフロー E2Eテスト', () => {
     expect(await releaseResponse.status()).toBe(200);
     const releaseData = await releaseResponse.json();
     expect(releaseData.success).toBe(true);
+    expect(releaseData.chargeId).toBeDefined();
+    expect(releaseData.refundedAmount).toBe(10000);
 
     // 11. キャンセル完了画面への遷移を確認
     await page.waitForSelector('#cancel-complete');

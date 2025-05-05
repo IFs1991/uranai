@@ -4,9 +4,9 @@
   "description": "ライフサイクル・ポテンシャル占術サービス - モバイルファースト縦型LP版",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "build": "",
-    "start": "",
+    "dev": "node server.js",
+    "build": "node server.js",
+    "start": "node server.js",
     "test": "vitest"
   },
   "dependencies": {

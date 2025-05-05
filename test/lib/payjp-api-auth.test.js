@@ -9,18 +9,28 @@ import {
   generateRandomFutureExpiry
 } from '../payjp-test-cards';
 
-// 環境変数とfetchのモック
-vi.mock('process.env', () => ({
-  PAYJP_SECRET_KEY: 'sk_test_dummy_secret_key_for_testing',
+// 環境変数のモック
+vi.mock('../../config/env', () => ({
+  default: {
+    PAYJP_SECRET_KEY: 'sk_test_dummy_secret_key_for_testing',
+  }
 }));
 
 // グローバルfetchのモック
 global.fetch = vi.fn();
+
+// Buffer.fromのモック
 global.Buffer = {
   from: vi.fn().mockReturnValue({
     toString: vi.fn().mockReturnValue('dummy_base64_encoded_string')
   })
 };
+
+// URLSearchParamsのモック
+global.URLSearchParams = vi.fn().mockImplementation((params) => ({
+  toString: vi.fn().mockReturnValue('mocked-params-string'),
+  get: vi.fn().mockImplementation((key) => params[key])
+}));
 
 describe('payjp-api 与信枠関連', () => {
   beforeEach(() => {

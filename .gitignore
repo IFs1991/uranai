@@ -32,3 +32,4 @@ aioverview.yaml
 
 # Test directory
 /test/
+.vercel

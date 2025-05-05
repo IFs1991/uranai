@@ -4,6 +4,48 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PDFGenerator from '../../lib/pdf-generator.js';
 
+// PDFKitモジュールのモック
+vi.mock('pdfkit', () => {
+  return {
+    default: vi.fn().mockImplementation(() => {
+      return {
+        addPage: vi.fn(),
+        font: vi.fn().mockReturnThis(),
+        fontSize: vi.fn().mockReturnThis(),
+        fillColor: vi.fn().mockReturnThis(),
+        strokeColor: vi.fn().mockReturnThis(),
+        lineWidth: vi.fn().mockReturnThis(),
+        text: vi.fn().mockReturnThis(),
+        moveDown: vi.fn().mockReturnThis(),
+        image: vi.fn().mockReturnThis(),
+        rect: vi.fn().mockReturnThis(),
+        fill: vi.fn().mockReturnThis(),
+        stroke: vi.fn().mockReturnThis(),
+        circle: vi.fn().mockReturnThis(),
+        lineCap: vi.fn().mockReturnThis(),
+        moveTo: vi.fn().mockReturnThis(),
+        lineTo: vi.fn().mockReturnThis(),
+        save: vi.fn().mockReturnThis(),
+        restore: vi.fn().mockReturnThis(),
+        rotate: vi.fn().mockReturnThis(),
+        translate: vi.fn().mockReturnThis(),
+        linearGradient: vi.fn().mockReturnThis(),
+        dash: vi.fn().mockReturnThis(),
+        undash: vi.fn().mockReturnThis(),
+        currentLineHeight: vi.fn().mockReturnValue(15),
+        widthOfString: vi.fn().mockImplementation((text) => text.length * 5),
+        heightOfString: vi.fn().mockImplementation((text, options) => {
+          const lines = text.split('\n').length;
+          return lines * 15;
+        }),
+        page: { width: 595.28, height: 841.89, margins: { top: 50, bottom: 50, left: 50, right: 50 } },
+        pipe: vi.fn(),
+        end: vi.fn()
+      };
+    })
+  };
+});
+
 // PDFドキュメントのモック
 const mockPDFDocument = {
   addPage: vi.fn(),
@@ -36,18 +78,51 @@ const mockPDFDocument = {
     return lines * 15;
   }),
   page: { width: 595.28, height: 841.89, margins: { top: 50, bottom: 50, left: 50, right: 50 } },
+  pipe: vi.fn(),
+  end: vi.fn()
 };
 
 // fsモジュールのモック
 vi.mock('fs', () => ({
   existsSync: vi.fn().mockReturnValue(true),
   readFileSync: vi.fn().mockReturnValue(Buffer.from('mock image data')),
+  createWriteStream: vi.fn().mockReturnValue({
+    on: vi.fn().mockImplementation((event, callback) => {
+      if (event === 'finish') {
+        setTimeout(callback, 0);
+      }
+      return {
+        on: vi.fn()
+      };
+    })
+  })
+}));
+
+// fsプロミスモジュールのモック
+vi.mock('fs/promises', () => ({
+  mkdir: vi.fn().mockResolvedValue(),
+  readFile: vi.fn().mockResolvedValue(Buffer.from('mock pdf content')),
+  writeFile: vi.fn().mockResolvedValue(),
+  access: vi.fn().mockResolvedValue(true)
 }));
 
 // パスモジュールのモック
 vi.mock('path', () => ({
   join: vi.fn().mockImplementation((...args) => args.join('/')),
   resolve: vi.fn().mockImplementation((...args) => args.join('/')),
+}));
+
+// ストリームモジュールのモック
+vi.mock('stream', () => ({
+  pipeline: vi.fn().mockImplementation((readable, writable, callback) => {
+    setTimeout(() => callback(), 0);
+    return { pipe: vi.fn() };
+  })
+}));
+
+// os
+vi.mock('os', () => ({
+  tmpdir: vi.fn().mockReturnValue('/tmp')
 }));
 
 describe('PDFGenerator クラス', () => {

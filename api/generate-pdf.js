@@ -39,7 +39,7 @@ const ensureTmpDir = async () => {
  * @param {object} horoscopeReading 占い結果
  * @param {array} dailyHoroscopes 日別占い
  */
-async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyHoroscopes) {
+export async function generatePdfInBackground(jobId, userData, horoscopeReading, dailyHoroscopes) {
   const tmpDir = await ensureTmpDir();
   const outputPath = path.join(tmpDir, `${jobId}.pdf`);
 

@@ -1,0 +1,94 @@
+problem: |
+  Vitest で kv-store.test.js を実行すると、vi.mock の Hoisting (巻き上げ) に起因する
+  "ReferenceError: Cannot access '...' before initialization" エラーが、
+  複数の修正アプローチ（ESM設定、vi.mockの書き方変更、setup.js無効化など）を
+  試みても解消されない。
+goal: |
+  kv-store.test.js のテストが "ReferenceError" なしに正常に実行され、
+  最終的にすべてのテストケースが成功する状態にする。
+
+phases:
+  - name: "Phase 1: Manual Mocks (`__mocks__`) の導入と基本設定の最終確認"
+    priority: High
+    description: |
+      vi.mock の Hoisting 問題を根本的に回避するため、Manual Mocks を導入し、
+      関連する設定が最新の状態であることを確認する。
+    steps:
+      - action: "プロジェクトルートに `__mocks__` ディレクトリを作成する。"
+        check: "`__mocks__` ディレクトリが存在すること。"
+        notes: すでに存在する場合はスキップ。
+      - action: "`__mocks__` 内に `vercel` ディレクトリを作成する (`@` なし)。"
+        check: "`__mocks__/vercel` ディレクトリが存在すること。"
+      - action: "`vercel` ディレクトリ内に `kv.js` ファイルを作成する (`__mocks__/vercel/kv.js`)。"
+        check: "`__mocks__/vercel/kv.js` ファイルが存在すること。"
+      - action: |
+          `__mocks__/vercel/kv.js` に `@vercel/kv` のモック実装を記述する。
+          `vi.fn()` でモック関数を作成し、それらを `kv` オブジェクトとして `export` する。
+          また、モック関数自体も個別に `export` する。（提供されたコード例を参照）
+        check: "ファイルに正しいモックコード（`export const mockSet = vi.fn();` や `export const kv = { ... };`）が記述されていること。"
+      - action: "`kv-store.test.js` から `vi.mock('@vercel/kv', ...)` の記述を完全に削除する。"
+        check: "テストファイル内に `vi.mock('@vercel/kv', ...)` が存在しないこと。"
+      - action: "`kv-store.test.js` のトップレベルにあったモック変数宣言 (`let mockSet;` など) を削除する。"
+        check: "テストファイル内にトップレベルのモック変数宣言がないこと。"
+      - action: |
+          `kv-store.test.js` の冒頭で、`__mocks__/vercel/kv.js` から必要なモック関数
+          (`mockSet`, `mockGet` など) を `import { ... } from '@vercel/kv';` の形式でインポートする。
+        check: "正しい import 文が記述されていること。"
+      - action: |
+          `kv-store.test.js` の `beforeEach` や `it` 内で、モック関数のリセット、
+          戻り値設定、呼び出し検証を、インポートしたモック変数 (`mockSet` など) に
+          対して行うようにコード全体を修正する。（提供されたコード例を参照）
+        check: "テストコード全体でモック関数への参照が正しく修正されていること。"
+      - action: "`package.json` に `"type": "module"` が設定されていることを再確認する。"
+        check: `"type": "module"` が確実に存在すること。
+      - action: "`vitest.config.js` の `environment` が `'node'` に設定されていることを再確認する。"
+        check: `environment: 'node'` が設定されていること。
+      - action: "`vitest.config.js` の `setupFiles` がコメントアウトされているか、`setup.js` の中身が空であることを再確認する。"
+        check: "`setup.js` がテスト実行に影響を与えない状態であること。"
+      - action: "`node_modules` と `package-lock.json` を削除し、`npm install` を実行して依存関係をクリーンにする。"
+        check: "依存関係の再インストールがエラーなく完了すること。"
+      - action: "`npx vitest run test/lib/kv-store.test.js` を実行する。"
+        check: |
+          - "ReferenceError: Cannot access '...' before initialization" が解消されたか？
+          - テスト自体が実行され、成功または失敗の結果が出るようになったか？
+          - （もし失敗する場合）エラーメッセージが `ReferenceError` 以外に変わったか？
+
+  - name: "Phase 2: 環境要因の詳細調査"
+    priority: Medium
+    condition: "Phase 1 を実施しても ReferenceError が解消しない、または別の問題が発生する場合"
+    description: |
+      テスト実行環境や関連する設定ファイルに問題がないか、より詳細に調査する。
+    steps:
+      - action: "`vite.config.js` (または `.ts`, `.cjs`) がプロジェクトに存在するか確認する。"
+        check: "存在する場合、その内容（特に `plugins`, `resolve`, `build`, `esbuild`）を共有し、影響がないか確認する。"
+      - action: "`tsconfig.json` または `jsconfig.json` がプロジェクトに存在するか確認する。"
+        check: "存在する場合、その内容（特に `target`, `module`, `moduleResolution`）を共有し、設定が適切か確認する。"
+      - action: "現在の Node.js のバージョン (`node -v`) を確認し、別の LTS バージョン (例: 18.x系の最新、20.x系の最新) で試してみる。"
+        check: "Node.js のバージョン依存の問題でないか切り分ける。"
+      - action: "Vitest のバージョンを最新 (`npm install -D vitest@latest`) または少し前の安定版 (`npm install -D vitest@1.5.3` など) に変更してみる。"
+        check: "特定の Vitest バージョンのバグでないか切り分ける。"
+      - action: "`npm ls` を実行し、依存関係の衝突や警告がないか確認する。"
+        check: "依存関係に問題がないことを確認する。"
+      - action: "プロジェクト全体のファイルパスやディレクトリ名に、特殊文字、スペース、大文字小文字の混在など、問題となりそうな箇所がないか確認する。"
+        check: "ファイルシステム起因の問題でないことを確認する。"
+
+  - name: "Phase 3: 代替アプローチと情報収集"
+    priority: Low
+    condition: "Phase 1, 2 を実施しても問題が解決しない場合"
+    description: |
+      Vitest の標準的なモック機能以外のアプローチや、外部の情報を活用する。
+    steps:
+      - action: "Vitest の実験的 API `vi.unstable_mockModule` を使ったモック実装を試す。"
+        check: "Hoisting を完全に回避する別の方法でモックが機能するか確認する。"
+      - action: |
+          テスト対象コード (`kv-store.js`) の設計を見直し、依存性注入 (Dependency Injection) パターンを
+          導入することを検討する。KVクライアントを外部から注入できるようにし、テスト時には
+          本物のクライアントの代わりにテストダブル（スタブやフェイクオブジェクト）を注入する。
+        check: "よりテスト容易性の高い設計に変更可能か検討する。"
+      - action: "Vitest の GitHub リポジトリの Issues や Discussions で、類似の Hoisting 問題や ReferenceError が報告されていないか検索する。"
+        check: "既知の問題や有効なワークアラウンド、解決策が見つかるか確認する。"
+      - action: |
+          Stack Overflow や関連する開発者コミュニティ（日本語なら Zenn や Qiita など）で、
+          現在の状況、試したこと、エラーメッセージ、関連ファイルのコード（匿名化・簡略化して）を
+          含めて質問を作成する。
+        check: "他の開発者からの知見やアドバイスを得る。"

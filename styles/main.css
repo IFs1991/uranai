@@ -142,6 +142,5 @@
 
         /* PDF生成プログレス関連のスタイル */
         #pdf-progress-container {
-// ... existing code ...
+            /* TODO: ここにPDF生成プログレス関連のスタイルを追加してください */
         }
-    }

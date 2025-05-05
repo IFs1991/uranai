@@ -640,6 +640,111 @@
         body.modal-open {
             overflow: hidden;
         }
+
+        /* SVG表示用モーダルのスタイル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            background: linear-gradient(135deg, #1F1F42 0%, #2A2A5A 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 2;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, var(--main-color) 0%, #2D2D62 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--secondary-color);
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 0;
+            width: auto;
+            box-shadow: none;
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--text-color);
+            transform: none;
+            box-shadow: none;
+            background: none;
+        }
+
+        .modal-body {
+            padding: 10px;
+            overflow-y: auto;
+            max-height: calc(90vh - 60px);
+        }
+
+        #svg-container {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            text-align: center;
+        }
+
+        #sample-svg-object {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(25, 25, 112, 0.3);
+        }
+
+        .secondary-button {
+            background: linear-gradient(135deg, rgba(147, 112, 219, 0.7) 0%, rgba(72, 61, 139, 0.7) 100%);
+            margin-top: 15px;
+        }
+
+        .secondary-button:hover {
+            background: linear-gradient(135deg, rgba(147, 112, 219, 0.9) 0%, rgba(72, 61, 139, 0.9) 100%);
+        }
     </style>
 
     <!-- 遅延読み込みCSS -->
@@ -796,8 +901,7 @@
             </div>
             <div class="modal-body">
                 <div id="svg-container">
-                    <!-- SVGコンテンツはここに読み込まれます -->
-                    <object type="image/svg+xml" data="sample.svg" id="sample-svg-object" aria-label="鑑定書サンプルSVG"></object>
+                    <!-- SVGコンテンツはJavaScriptで読み込みます -->
                 </div>
             </div>
         </div>
@@ -855,34 +959,66 @@
 
         // SVGサンプルモーダル処理
         const svgModal = document.getElementById('svg-modal');
+        const svgContainer = document.getElementById('svg-container');
         const showSvgButton = document.getElementById('show-sample-pdf-btn');
         const closeSvgModalElements = document.querySelectorAll('[data-close-modal]');
+
+        // SVGファイルを読み込む関数
+        const loadSvgContent = async () => {
+            // コンテナをクリア
+            svgContainer.innerHTML = '<p style="text-align: center; padding: 20px;">読み込み中...</p>';
+            try {
+                // assetsディレクトリ内のsample.svgをfetch
+                const response = await fetch('assets/sample.svg'); // パスを確認
+                if (!response.ok) {
+                    throw new Error(`SVGの読み込みに失敗しました: ${response.status} ${response.statusText}`);
+                }
+                const svgText = await response.text();
+                svgContainer.innerHTML = svgText;
+
+                // 読み込んだSVG要素を取得し、スタイルを適用
+                const svgElement = svgContainer.querySelector('svg');
+                if (svgElement) {
+                    svgElement.style.width = '100%';
+                    svgElement.style.height = 'auto';
+                    svgElement.style.maxHeight = '70vh';
+                    svgElement.style.display = 'block'; // 表示を確実に
+                    svgElement.style.margin = 'auto'; // 中央揃え
+                } else {
+                   console.warn('読み込んだコンテンツ内にSVG要素が見つかりませんでした。');
+                   svgContainer.innerHTML = '<p style="color: #ffcc00; text-align: center; padding: 20px;">SVG形式が正しくない可能性があります。</p>';
+                }
+            } catch (error) {
+                console.error('SVG読み込みエラー:', error);
+                svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの読み込みに失敗しました。<br>${error.message}</p>`;
+            }
+        };
 
         if (showSvgButton && svgModal) {
             showSvgButton.addEventListener('click', () => {
                 svgModal.classList.add('active');
                 document.body.classList.add('modal-open');
+                // モーダル表示時にSVGを読み込む
+                loadSvgContent();
             });
         }
 
+        // モーダルを閉じる処理
         closeSvgModalElements.forEach(el => {
             el.addEventListener('click', () => {
                 if (svgModal) {
                     svgModal.classList.remove('active');
                     document.body.classList.remove('modal-open');
+                    // SVGコンテナをクリア (任意)
+                    svgContainer.innerHTML = '';
                 }
-                // 他のモーダルも閉じる場合はここに追加
+                // 他のモーダルも閉じる場合はここに追加 (PaymentModalなど)
                 const paymentModal = document.querySelector('.payment-modal');
                 if (paymentModal && paymentModal.classList.contains('active')) {
                     paymentModal.classList.remove('active');
                     document.body.classList.remove('modal-open');
                 }
-                const pdfProgress = document.getElementById('pdf-progress-container');
-                if (pdfProgress && pdfProgress.style.display !== 'none') {
-                    // PDFプログレスは単純に閉じるのではなく、適切な処理が必要かもしれない
-                    // ここでは仮に非表示にする
-                    // pdfProgress.style.display = 'none';
-                }
+                // ... (他のモーダルがあれば同様に)
             });
         });
 
@@ -892,16 +1028,17 @@
                 if (svgModal && svgModal.classList.contains('active')) {
                     svgModal.classList.remove('active');
                     document.body.classList.remove('modal-open');
+                    svgContainer.innerHTML = ''; // SVGコンテナをクリア (任意)
                 }
-                // 他のモーダルも閉じる場合はここに追加
+                // 他のモーダルも閉じる (PaymentModalなど)
                 const paymentModal = document.querySelector('.payment-modal');
                 if (paymentModal && paymentModal.classList.contains('active')) {
                      paymentModal.classList.remove('active');
-                    document.body.classList.remove('modal-open');
-                }
+                     document.body.classList.remove('modal-open');
+                 }
+                 // ... (他のモーダルがあれば同様に)
             }
         });
-
     });
     </script>
 </body>

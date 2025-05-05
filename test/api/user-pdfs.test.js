@@ -10,13 +10,13 @@ vi.mock('../../api/jobStore', () => ({
 }));
 
 // KVストアのモック
-vi.mock('../../lib/kvStore', () => ({
+vi.mock('../../lib/kv-store.js', () => ({
   getItem: vi.fn(),
   setItem: vi.fn()
 }));
 
 import { getUserJobs } from '../../api/jobStore';
-import { getItem } from '../../lib/kvStore';
+import { getItem } from '../../lib/kv-store.js';
 
 describe('user-pdfs.js - ユーザーPDF管理API', () => {
   // モックリクエスト/レスポンスオブジェクト

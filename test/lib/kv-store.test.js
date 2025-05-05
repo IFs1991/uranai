@@ -1,9 +1,36 @@
-/**
- * KVストア連携ライブラリのテスト
- */
+// test/lib/kv-store.test.js
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// ★★★ vi.unstable_mockModule を使用 ★★★
+const { kv, mockSet, mockGet, mockDel, mockExpire, mockHset, mockHget, mockHgetall, mockKeys } = await vi.unstable_mockModule(
+  '@vercel/kv', // モック対象のモジュール
+  () => { // ファクトリ関数
+    const mockSet = vi.fn();
+    const mockGet = vi.fn();
+    const mockDel = vi.fn();
+    const mockExpire = vi.fn();
+    const mockHset = vi.fn();
+    const mockHget = vi.fn();
+    const mockHgetall = vi.fn();
+    const mockKeys = vi.fn();
+    const kv = {
+      set: mockSet,
+      get: mockGet,
+      del: mockDel,
+      expire: mockExpire,
+      hset: mockHset,
+      hget: mockHget,
+      hgetall: mockHgetall,
+      keys: mockKeys,
+    };
+    return { kv, mockSet, mockGet, mockDel, mockExpire, mockHset, mockHget, mockHgetall, mockKeys };
+  }
+);
+
+// --- テスト対象のモジュールをインポート ---
+// ★★★ モック設定後にインポート ★★★
 import {
-  kv,
   setValue,
   getValue,
   deleteKey,
@@ -15,192 +42,249 @@ import {
   safeKVOperation
 } from '../../lib/kv-store.js';
 
-// Vercel KVモジュールのモック
-vi.mock('@vercel/kv', () => ({
-  kv: {
-    set: vi.fn().mockResolvedValue('OK'),
-    get: vi.fn().mockImplementation(async (key) => {
-      if (key === 'existing-key') return 'stored-value';
-      if (key === 'json-key') return { foo: 'bar' };
-      return null;
-    }),
-    del: vi.fn().mockResolvedValue(1),
-    hset: vi.fn().mockResolvedValue(1),
-    hget: vi.fn().mockImplementation(async (key, field) => {
-      if (key === 'user-hash' && field === 'name') return '山田太郎';
-      return null;
-    }),
-    hgetall: vi.fn().mockImplementation(async (key) => {
-      if (key === 'user-hash') return { name: '山田太郎', email: 'test@example.com' };
-      return null;
-    }),
-    keys: vi.fn().mockResolvedValue(['key1', 'key2', 'key3']),
-    expire: vi.fn().mockResolvedValue(1)
-  }
-}));
+// --- describe 以下は変更ありません ---
+describe('KVストア連携ライブラリ (kv-store.js)', () => {
 
-describe('KVストア連携ライブラリ', () => {
   beforeEach(() => {
-    // テスト前にモックリセット
-    vi.clearAllMocks();
+    // unstable_mockModule で取得したモック関数をリセット
+    vi.resetAllMocks();
+    // または個別にリセット
+    // mockSet.mockClear();
+    // ...など
+
+    // デフォルトの戻り値を設定 (必要に応じて)
+    mockSet.mockResolvedValue('OK');
+    mockGet.mockResolvedValue('test-value');
+    mockDel.mockResolvedValue(1);
+    mockExpire.mockResolvedValue(1);
+    mockHset.mockResolvedValue(1);
+    mockHget.mockResolvedValue('test-hash-value');
+    mockHgetall.mockResolvedValue({ key1: 'value1', key2: 'value2' });
+    mockKeys.mockResolvedValue(['user:1', 'user:2']);
   });
 
+  // --- setValue 関数のテストスイート ---
   describe('setValue 関数', () => {
-    it('正常系：値が正しく設定される', async () => {
-      const result = await setValue('test-key', 'test-value');
+    it('正常系：キー、値、オプションを指定して値が正しく設定される', async () => {
+      const key = 'test-key-set';
+      const value = { name: 'テストデータ', items: [10, 20] };
+      const options = { ex: 60 * 60 };
 
-      // Vercel KV の set 関数が正しい引数で呼び出されていることを確認
-      expect(kv.set).toHaveBeenCalledWith('test-key', 'test-value', {});
+      const result = await setValue(key, value, options);
+
       expect(result).toBe('OK');
+      expect(mockSet).toHaveBeenCalledWith(key, value, options);
+      expect(mockSet).toHaveBeenCalledTimes(1);
     });
 
-    it('オプション指定で値が設定される', async () => {
-      const options = { ex: 3600 }; // 1時間の有効期限
-      await setValue('test-key', 'test-value', options);
+    it('オプションなしでオブジェクト値が正しく設定される', async () => {
+      const key = 'user-object-key';
+      const value = { id: 123, active: true };
 
-      // オプションが正しく渡されることを確認
-      expect(kv.set).toHaveBeenCalledWith('test-key', 'test-value', options);
-    });
+      await setValue(key, value);
 
-    it('オブジェクト値が正しく設定される', async () => {
-      const obj = { name: '山田太郎', age: 30 };
-      await setValue('user-key', obj);
-
-      // オブジェクトがそのまま渡されることを確認
-      expect(kv.set).toHaveBeenCalledWith('user-key', obj, {});
+      expect(mockSet).toHaveBeenCalledWith(key, value, {});
     });
   });
 
+  // --- getValue 関数のテストスイート ---
   describe('getValue 関数', () => {
-    it('正常系：保存されている値を取得できる', async () => {
-      const value = await getValue('existing-key');
+    it('正常系：指定したキーの値を取得できる', async () => {
+      const key = 'get-this-key';
+      const expectedValue = 'これが取得される値';
+      mockGet.mockResolvedValueOnce(expectedValue);
 
-      // Vercel KV の get 関数が正しいキーで呼び出されていることを確認
-      expect(kv.get).toHaveBeenCalledWith('existing-key');
-      expect(value).toBe('stored-value');
+      const result = await getValue(key);
+
+      expect(mockGet).toHaveBeenCalledWith(key);
+      expect(result).toBe(expectedValue);
     });
 
-    it('存在しないキーの場合は null が返される', async () => {
-      const value = await getValue('non-existing-key');
+    it('存在しないキーの場合は null が返される (KVからの戻り値がnullの場合)', async () => {
+      const key = 'non-existent-key';
+      mockGet.mockResolvedValueOnce(null);
 
-      expect(kv.get).toHaveBeenCalledWith('non-existing-key');
-      expect(value).toBeNull();
+      const result = await getValue(key);
+
+      expect(mockGet).toHaveBeenCalledWith(key);
+      expect(result).toBeNull();
     });
 
-    it('JSON値が正しく取得できる', async () => {
-      const value = await getValue('json-key');
+    it('JSON形式のオブジェクト値が正しく取得できる', async () => {
+      const key = 'json-data-key';
+      const expectedObject = { user: 'Taro', score: 100, settings: { theme: 'dark' } };
+      mockGet.mockResolvedValueOnce(expectedObject);
 
-      expect(kv.get).toHaveBeenCalledWith('json-key');
-      expect(value).toEqual({ foo: 'bar' });
+      const result = await getValue(key);
+
+      expect(mockGet).toHaveBeenCalledWith(key);
+      expect(result).toEqual(expectedObject);
     });
   });
 
+
+  // --- deleteKey 関数のテストスイート ---
   describe('deleteKey 関数', () => {
-    it('正常系：キーが正しく削除される', async () => {
-      const result = await deleteKey('test-key');
+    it('正常系：指定したキーが正しく削除される', async () => {
+      const key = 'delete-me';
+      mockDel.mockResolvedValueOnce(1);
 
-      // Vercel KV の del 関数が正しいキーで呼び出されていることを確認
-      expect(kv.del).toHaveBeenCalledWith('test-key');
+      const result = await deleteKey(key);
+
+      expect(mockDel).toHaveBeenCalledWith(key);
       expect(result).toBe(1);
     });
   });
 
+
+  // --- setHashField 関数のテストスイート ---
   describe('setHashField 関数', () => {
-    it('正常系：ハッシュフィールドが正しく設定される', async () => {
-      const result = await setHashField('user-hash', 'name', '山田太郎');
+    it('正常系：指定したハッシュキーのフィールドに値が正しく設定される', async () => {
+      const key = 'my-hash';
+      const field = 'username';
+      const value = 'Alice';
+      mockHset.mockResolvedValueOnce(1);
 
-      // Vercel KV の hset 関数が正しく呼び出されていることを確認
-      expect(kv.hset).toHaveBeenCalledWith('user-hash', { name: '山田太郎' });
+      const result = await setHashField(key, field, value);
+
+      expect(mockHset).toHaveBeenCalledWith(key, { [field]: value });
       expect(result).toBe(1);
     });
   });
 
+
+  // --- getHashField 関数のテストスイート ---
   describe('getHashField 関数', () => {
-    it('正常系：ハッシュフィールドの値を取得できる', async () => {
-      const value = await getHashField('user-hash', 'name');
+    it('正常系：指定したハッシュキーのフィールドの値を取得できる', async () => {
+      const key = 'my-hash';
+      const field = 'email';
+      const expectedValue = 'alice@example.com';
+      mockHget.mockResolvedValueOnce(expectedValue);
 
-      // Vercel KV の hget 関数が正しく呼び出されていることを確認
-      expect(kv.hget).toHaveBeenCalledWith('user-hash', 'name');
-      expect(value).toBe('山田太郎');
+      const result = await getHashField(key, field);
+
+      expect(mockHget).toHaveBeenCalledWith(key, field);
+      expect(result).toBe(expectedValue);
     });
 
-    it('存在しないフィールドの場合は null が返される', async () => {
-      const value = await getHashField('user-hash', 'non-existing');
+    it('存在しないフィールドの場合は null が返される (KVからの戻り値がnullの場合)', async () => {
+      const key = 'my-hash';
+      const field = 'non-existent-field';
+      mockHget.mockResolvedValueOnce(null);
 
-      expect(kv.hget).toHaveBeenCalledWith('user-hash', 'non-existing');
-      expect(value).toBeNull();
-    });
-  });
+      const result = await getHashField(key, field);
 
-  describe('getHashAll 関数', () => {
-    it('正常系：ハッシュ全体を取得できる', async () => {
-      const hash = await getHashAll('user-hash');
-
-      // Vercel KV の hgetall 関数が正しく呼び出されていることを確認
-      expect(kv.hgetall).toHaveBeenCalledWith('user-hash');
-      expect(hash).toEqual({ name: '山田太郎', email: 'test@example.com' });
-    });
-
-    it('存在しないハッシュの場合は null が返される', async () => {
-      const hash = await getHashAll('non-existing-hash');
-
-      expect(kv.hgetall).toHaveBeenCalledWith('non-existing-hash');
-      expect(hash).toBeNull();
-    });
-  });
-
-  describe('scanKeys 関数', () => {
-    it('正常系：パターンに一致するキーを取得できる', async () => {
-      const keys = await scanKeys('user:*');
-
-      // Vercel KV の keys 関数が正しく呼び出されていることを確認
-      expect(kv.keys).toHaveBeenCalledWith('user:*');
-      expect(keys).toEqual(['key1', 'key2', 'key3']);
-    });
-  });
-
-  describe('setExpiry 関数', () => {
-    it('正常系：キーの有効期限を設定できる', async () => {
-      const result = await setExpiry('test-key', 3600);
-
-      // Vercel KV の expire 関数が正しく呼び出されていることを確認
-      expect(kv.expire).toHaveBeenCalledWith('test-key', 3600);
-      expect(result).toBe(1);
-    });
-  });
-
-  describe('safeKVOperation 関数', () => {
-    it('正常系：操作が成功した場合は結果を返す', async () => {
-      const operation = async () => 'operation-result';
-      const result = await safeKVOperation(operation);
-
-      expect(result).toBe('operation-result');
-    });
-
-    it('操作が失敗した場合はデフォルト値を返す', async () => {
-      // エラーをスローする操作
-      const operation = async () => { throw new Error('Operation failed'); };
-      // コンソールエラーをモック
-      console.error = vi.fn();
-
-      const result = await safeKVOperation(operation, 'default-value');
-
-      // エラーがログ出力されることを確認
-      expect(console.error).toHaveBeenCalled();
-      // デフォルト値が返されることを確認
-      expect(result).toBe('default-value');
-    });
-
-    it('デフォルト値を指定しない場合は null を返す', async () => {
-      // エラーをスローする操作
-      const operation = async () => { throw new Error('Operation failed'); };
-      // コンソールエラーをモック
-      console.error = vi.fn();
-
-      const result = await safeKVOperation(operation);
-
-      // デフォルト値が指定されていない場合は null が返されることを確認
+      expect(mockHget).toHaveBeenCalledWith(key, field);
       expect(result).toBeNull();
     });
   });
+
+
+  // --- getHashAll 関数のテストスイート ---
+  describe('getHashAll 関数', () => {
+    it('正常系：指定したハッシュキーの全てのフィールドと値を取得できる', async () => {
+      const key = 'user-profile-hash';
+      const expectedHash = { name: 'Bob', age: '25', city: 'Osaka' };
+      mockHgetall.mockResolvedValueOnce(expectedHash);
+
+      const result = await getHashAll(key);
+
+      expect(mockHgetall).toHaveBeenCalledWith(key);
+      expect(result).toEqual(expectedHash);
+    });
+
+    it('存在しないハッシュの場合は null が返される', async () => {
+      const key = 'non-existent-hash';
+      mockHgetall.mockResolvedValueOnce(null);
+
+      const result = await getHashAll(key);
+
+      expect(mockHgetall).toHaveBeenCalledWith(key);
+      expect(result).toBeNull();
+    });
+  });
+
+
+  // --- scanKeys 関数のテストスイート ---
+  describe('scanKeys 関数', () => {
+    it('正常系：指定したパターンに一致するキーのリストを取得できる', async () => {
+      const pattern = 'product:*';
+      const expectedKeys = ['product:123', 'product:456', 'product:abc'];
+      mockKeys.mockResolvedValueOnce(expectedKeys);
+
+      const result = await scanKeys(pattern);
+
+      expect(mockKeys).toHaveBeenCalledWith(pattern);
+      expect(result).toEqual(expectedKeys);
+    });
+  });
+
+
+  // --- setExpiry 関数のテストスイート ---
+  describe('setExpiry 関数', () => {
+    it('正常系：指定したキーに有効期限を正しく設定できる', async () => {
+      const key = 'session-key';
+      const seconds = 30 * 60;
+      mockExpire.mockResolvedValueOnce(1);
+
+      const result = await setExpiry(key, seconds);
+
+      expect(mockExpire).toHaveBeenCalledWith(key, seconds);
+      expect(result).toBe(1);
+    });
+  });
+
+
+  // --- safeKVOperation 関数のテストスイート ---
+  describe('safeKVOperation 関数', () => {
+    let errorSpy;
+
+    beforeEach(() => {
+      // console.errorのスパイを作成
+      errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      // テスト後にスパイをリストア
+      if (errorSpy) {
+        errorSpy.mockRestore();
+      }
+    });
+
+    it('正常系：渡された操作関数が成功した場合、その結果を返す', async () => {
+      const operationResult = { data: '成功データ' };
+      const successfulOperation = vi.fn().mockResolvedValue(operationResult);
+      const defaultValue = 'デフォルト値';
+
+      const result = await safeKVOperation(successfulOperation, defaultValue);
+
+      expect(successfulOperation).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(operationResult);
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it('異常系：渡された操作関数が失敗した場合、デフォルト値を返す', async () => {
+      const operationError = new Error('KV接続エラー');
+      const failedOperation = vi.fn().mockRejectedValue(operationError);
+      const defaultValue = { error: true, fallback: 'デフォルトデータ' };
+
+      const result = await safeKVOperation(failedOperation, defaultValue);
+
+      expect(failedOperation).toHaveBeenCalledTimes(1);
+      expect(result).toEqual(defaultValue);
+      expect(errorSpy).toHaveBeenCalledWith('KVストア操作エラー:', operationError);
+    });
+
+    it('異常系：操作関数が失敗し、デフォルト値が指定されていない場合、null を返す', async () => {
+      const operationError = new Error('タイムアウト');
+      const failedOperation = vi.fn().mockRejectedValue(operationError);
+
+      const result = await safeKVOperation(failedOperation);
+
+      expect(failedOperation).toHaveBeenCalledTimes(1);
+      expect(result).toBeNull();
+      expect(errorSpy).toHaveBeenCalledWith('KVストア操作エラー:', operationError);
+    });
+  });
+
 });
