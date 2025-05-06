@@ -671,7 +671,7 @@
 
         .modal-content {
             position: relative;
-            width: 90%;
+            width: 95%;
             max-width: 800px;
             max-height: 90vh;
             background: linear-gradient(135deg, #1F1F42 0%, #2A2A5A 100%);
@@ -680,6 +680,8 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             z-index: 2;
             animation: slideIn 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
         }
 
         .modal-header {
@@ -717,16 +719,20 @@
         }
 
         .modal-body {
-            padding: 10px;
+            padding: 0;
             overflow-y: auto;
-            max-height: calc(90vh - 60px);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         #svg-container {
             width: 100%;
             height: 100%;
-            overflow-y: auto;
-            text-align: center;
+            min-height: 65vh;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
 
         #sample-svg-object {
@@ -744,6 +750,29 @@
 
         .secondary-button:hover {
             background: linear-gradient(135deg, rgba(147, 112, 219, 0.9) 0%, rgba(72, 61, 139, 0.9) 100%);
+        }
+
+        /* モバイル対応調整 */
+        @media (max-width: 600px) {
+            .modal-content {
+                width: 100%;
+                height: 100%;
+                max-height: 100%;
+                border-radius: 0;
+            }
+
+            .modal-body {
+                height: calc(100% - 60px);
+            }
+
+            #svg-container {
+                min-height: 100%;
+            }
+
+            .zoom-controls {
+                top: 10px !important;
+                right: 10px !important;
+            }
         }
     </style>
 
@@ -963,43 +992,324 @@
         const showSvgButton = document.getElementById('show-sample-pdf-btn');
         const closeSvgModalElements = document.querySelectorAll('[data-close-modal]');
 
-        // SVGファイルを読み込む関数
-        const loadSvgContent = async () => {
-            // コンテナをクリア
-            svgContainer.innerHTML = '<p style="text-align: center; padding: 20px;">読み込み中...</p>';
-            try {
-                // assetsディレクトリ内のsample.svgをfetch
-                const response = await fetch('assets/sample.svg'); // パスを確認
-                if (!response.ok) {
-                    throw new Error(`SVGの読み込みに失敗しました: ${response.status} ${response.statusText}`);
-                }
-                const svgText = await response.text();
-                svgContainer.innerHTML = svgText;
+        // SVGの代わりにサンプル表示を使用する関数
+        function useSampleSvgFallback() {
+            // 簡易的なインラインSVGを表示（可読性向上版）
+            const svgInlineContent = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" style="background: linear-gradient(135deg, #191970 0%, #0E0E38 100%); width: 100%; height: auto;">
+                    <!-- ページ1: 表紙 -->
+                    <g transform="translate(0, 0)">
+                        <!-- 背景要素 -->
+                        <rect width="800" height="800" fill="none" />
 
-                // 読み込んだSVG要素を取得し、スタイルを適用
-                const svgElement = svgContainer.querySelector('svg');
-                if (svgElement) {
+                        <!-- タイトル（サイズ拡大） -->
+                        <text x="400" y="150" font-family="sans-serif" font-size="45" fill="#FFD700" text-anchor="middle" font-weight="bold">ライフサイクル・ポテンシャル占術</text>
+                        <text x="400" y="220" font-size="30" font-weight="bold" fill="#9370DB" text-anchor="middle">鑑定書</text>
+
+                        <!-- 顧客情報（サイズ拡大） -->
+                        <text x="400" y="350" font-size="36" font-weight="bold" fill="#F8F8FF" text-anchor="middle">山田 太郎 様</text>
+                        <text x="400" y="420" font-size="22" fill="#F8F8FF" text-anchor="middle">生年月日: 1985年5月10日</text>
+                        <text x="400" y="460" font-size="22" fill="#F8F8FF" text-anchor="middle">出生時刻: 12:30</text>
+                        <text x="400" y="500" font-size="22" fill="#F8F8FF" text-anchor="middle">出生地: 東京都新宿区</text>
+
+                        <!-- フッター -->
+                        <rect x="100" y="650" width="600" height="2" fill="rgba(255, 215, 0, 0.5)" />
+                        <text x="400" y="700" font-size="18" fill="#F8F8FF" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術</text>
+                    </g>
+                </svg>
+            `;
+
+            // 別々のページSVGを用意（ページ2）
+            const svgPage2Content = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" style="background: linear-gradient(135deg, #191970 0%, #0E0E38 100%); width: 100%; height: auto;">
+                    <!-- ページ2: 目次 -->
+                    <g transform="translate(0, 0)">
+                        <!-- 背景要素 -->
+                        <rect width="800" height="800" fill="none" />
+                        <rect x="100" y="50" width="600" height="60" rx="5" fill="rgba(72, 61, 139, 0.5)" />
+                        <text x="140" y="90" font-size="24" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+
+                        <!-- 目次タイトル -->
+                        <text x="400" y="180" font-size="36" font-weight="bold" fill="#FFD700" text-anchor="middle">目次</text>
+
+                        <!-- 目次項目（サイズ拡大） -->
+                        <g transform="translate(150, 250)">
+                            <text y="0" font-size="24" font-weight="bold" fill="#F8F8FF">1. 基本情報</text>
+                            <text y="50" font-size="24" font-weight="bold" fill="#F8F8FF">2. コアエネルギー解説</text>
+                            <text y="100" font-size="24" font-weight="bold" fill="#F8F8FF">3. 才能と人生のテーマ</text>
+                            <text y="150" font-size="24" font-weight="bold" fill="#F8F8FF">4. 運命の流れと転機</text>
+                            <text y="200" font-size="24" font-weight="bold" fill="#F8F8FF">5. 特定質問への回答</text>
+                            <text y="250" font-size="24" font-weight="bold" fill="#F8F8FF">6. 総合鑑定まとめ</text>
+                        </g>
+
+                        <!-- フッター -->
+                        <rect x="100" y="650" width="600" height="2" fill="rgba(255, 215, 0, 0.5)" />
+                        <text x="400" y="700" font-size="18" fill="#F8F8FF" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術</text>
+                    </g>
+                </svg>
+            `;
+
+            // 別々のページSVGを用意（ページ3）
+            const svgPage3Content = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" style="background: linear-gradient(135deg, #191970 0%, #0E0E38 100%); width: 100%; height: auto;">
+                    <!-- ページ3: 基本情報 -->
+                    <g transform="translate(0, 0)">
+                        <!-- 背景要素 -->
+                        <rect width="800" height="800" fill="none" />
+                        <rect x="100" y="50" width="600" height="60" rx="5" fill="rgba(72, 61, 139, 0.5)" />
+                        <text x="140" y="90" font-size="24" font-weight="bold" fill="#FFD700">ライフサイクル・ポテンシャル占術</text>
+
+                        <!-- セクションタイトル -->
+                        <rect x="100" y="150" width="600" height="50" rx="5" fill="rgba(147, 112, 219, 0.5)" />
+                        <text x="130" y="185" font-size="28" font-weight="bold" fill="#FFD700">1. 基本情報</text>
+
+                        <!-- 情報カード -->
+                        <rect x="100" y="220" width="600" height="400" rx="10" fill="rgba(25, 25, 112, 0.7)" stroke="rgba(255, 215, 0, 0.3)" stroke-width="2" />
+
+                        <!-- カード内のコンテンツ -->
+                        <text x="130" y="260" font-size="24" font-weight="bold" fill="#FFD700">鑑定対象者情報</text>
+
+                        <text x="130" y="310" font-size="20" fill="#9370DB">お名前:</text>
+                        <text x="300" y="310" font-size="20" fill="#F8F8FF">山田 太郎</text>
+
+                        <text x="130" y="350" font-size="20" fill="#9370DB">生年月日:</text>
+                        <text x="300" y="350" font-size="20" fill="#F8F8FF">1985年5月10日</text>
+
+                        <text x="130" y="390" font-size="20" fill="#9370DB">出生時刻:</text>
+                        <text x="300" y="390" font-size="20" fill="#F8F8FF">12:30</text>
+
+                        <text x="130" y="430" font-size="20" fill="#9370DB">出生地:</text>
+                        <text x="300" y="430" font-size="20" fill="#F8F8FF">東京都新宿区</text>
+
+                        <!-- フッター -->
+                        <rect x="100" y="650" width="600" height="2" fill="rgba(255, 215, 0, 0.5)" />
+                        <text x="400" y="700" font-size="18" fill="#F8F8FF" text-anchor="middle">© 2024 ライフサイクル・ポテンシャル占術</text>
+                    </g>
+                </svg>
+            `;
+
+            // SVGページコンテンツの配列
+            const svgPagesContent = [
+                svgInlineContent,
+                svgPage2Content,
+                svgPage3Content
+            ];
+
+            // 現在のページインデックス
+            let currentPageIndex = 0;
+
+            // コンテナにSVGを設定
+            svgContainer.innerHTML = svgPagesContent[currentPageIndex];
+
+            // ページコントロールを追加
+            const pageControlsDiv = document.createElement('div');
+            pageControlsDiv.className = 'page-controls';
+            pageControlsDiv.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: 15px 0;
+                gap: 10px;
+            `;
+
+            // 前へボタン
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '前のページ';
+            prevButton.style.cssText = `
+                padding: 5px 15px;
+                background: rgba(72, 61, 139, 0.7);
+                color: #F8F8FF;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            `;
+            prevButton.disabled = true;
+            prevButton.style.opacity = '0.5';
+
+            // ページ表示
+            const pageInfo = document.createElement('div');
+            pageInfo.textContent = `ページ ${currentPageIndex + 1}/${svgPagesContent.length}`;
+            pageInfo.style.cssText = `
+                color: #F8F8FF;
+                font-size: 16px;
+                font-weight: bold;
+            `;
+
+            // 次へボタン
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '次のページ';
+            nextButton.style.cssText = `
+                padding: 5px 15px;
+                background: rgba(72, 61, 139, 0.7);
+                color: #F8F8FF;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            `;
+
+            // ページめくり関数
+            function goToPage(pageIndex) {
+                if (pageIndex >= 0 && pageIndex < svgPagesContent.length) {
+                    currentPageIndex = pageIndex;
+
+                    // ページ変更のアニメーション
+                    svgContainer.style.opacity = '0';
+                    setTimeout(() => {
+                        svgContainer.innerHTML = svgPagesContent[currentPageIndex];
+                        pageInfo.textContent = `ページ ${currentPageIndex + 1}/${svgPagesContent.length}`;
+
+                        // ボタンの有効/無効状態を更新
+                        prevButton.disabled = currentPageIndex === 0;
+                        prevButton.style.opacity = currentPageIndex === 0 ? '0.5' : '1';
+                        nextButton.disabled = currentPageIndex === svgPagesContent.length - 1;
+                        nextButton.style.opacity = currentPageIndex === svgPagesContent.length - 1 ? '0.5' : '1';
+
+                        // フェードイン
+                        svgContainer.style.opacity = '1';
+                        svgContainer.style.transition = 'opacity 0.3s ease';
+                    }, 300);
+                }
+            }
+
+            // ボタンにイベントリスナーを追加
+            prevButton.addEventListener('click', () => goToPage(currentPageIndex - 1));
+            nextButton.addEventListener('click', () => goToPage(currentPageIndex + 1));
+
+            // コントロールを追加
+            pageControlsDiv.appendChild(prevButton);
+            pageControlsDiv.appendChild(pageInfo);
+            pageControlsDiv.appendChild(nextButton);
+
+            // ページセレクターを追加
+            const pageSelectDiv = document.createElement('div');
+            pageSelectDiv.style.cssText = `
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-top: 10px;
+            `;
+
+            // ページ番号表示をドットで
+            for (let i = 0; i < svgPagesContent.length; i++) {
+                const dot = document.createElement('div');
+                dot.style.cssText = `
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: ${i === currentPageIndex ? '#FFD700' : 'rgba(255, 255, 255, 0.3)'};
+                    margin: 0 5px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                `;
+                dot.addEventListener('click', () => goToPage(i));
+                pageSelectDiv.appendChild(dot);
+            }
+
+            // SVGコンテナの上にコントロールを追加
+            const controlsWrapper = document.createElement('div');
+            controlsWrapper.appendChild(pageControlsDiv);
+            controlsWrapper.appendChild(pageSelectDiv);
+
+            // 現在のSVGコンテナを取得
+            const currentSvgContainer = svgContainer.querySelector('svg').parentElement;
+
+            // ラッパーにコントロールとSVGコンテナを追加
+            svgContainer.innerHTML = '';
+            svgContainer.appendChild(controlsWrapper);
+            svgContainer.appendChild(currentSvgContainer);
+
+            // キーボードでのページめくりをサポート
+            document.addEventListener('keydown', (event) => {
+                // モーダルが表示されている場合のみキー操作を有効にする
+                const svgModal = document.getElementById('svg-modal');
+                if (svgModal && svgModal.classList.contains('active')) {
+                    if (event.key === 'ArrowLeft') {
+                        if (currentPageIndex > 0) {
+                            goToPage(currentPageIndex - 1);
+                        }
+                    } else if (event.key === 'ArrowRight') {
+                        if (currentPageIndex < svgPagesContent.length - 1) {
+                            goToPage(currentPageIndex + 1);
+                        }
+                    }
+                }
+            });
+
+            // スワイプ操作のサポート
+            let touchStartX = null;
+            svgContainer.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            }, { passive: true });
+
+            svgContainer.addEventListener('touchend', (e) => {
+                if (touchStartX === null) return;
+
+                const touchEndX = e.changedTouches[0].clientX;
+                const diff = touchStartX - touchEndX;
+                const threshold = 50; // スワイプの閾値
+
+                if (diff > threshold) {
+                    // 右から左へのスワイプ（次のページ）
+                    if (currentPageIndex < svgPagesContent.length - 1) {
+                        goToPage(currentPageIndex + 1);
+                    }
+                } else if (diff < -threshold) {
+                    // 左から右へのスワイプ（前のページ）
+                    if (currentPageIndex > 0) {
+                        goToPage(currentPageIndex - 1);
+                    }
+                }
+
+                touchStartX = null;
+            }, { passive: true });
+
+            // SVG要素にスタイルを適用
+            const svgElements = svgContainer.querySelectorAll('svg');
+            if (svgElements.length > 0) {
+                console.log('SVG要素を取得し、スタイルを適用します');
+                svgElements.forEach(svgElement => {
                     svgElement.style.width = '100%';
                     svgElement.style.height = 'auto';
-                    svgElement.style.maxHeight = '70vh';
-                    svgElement.style.display = 'block'; // 表示を確実に
-                    svgElement.style.margin = 'auto'; // 中央揃え
-                } else {
-                   console.warn('読み込んだコンテンツ内にSVG要素が見つかりませんでした。');
-                   svgContainer.innerHTML = '<p style="color: #ffcc00; text-align: center; padding: 20px;">SVG形式が正しくない可能性があります。</p>';
-                }
-            } catch (error) {
-                console.error('SVG読み込みエラー:', error);
-                svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの読み込みに失敗しました。<br>${error.message}</p>`;
+                    svgElement.style.display = 'block';
+                    svgElement.style.margin = 'auto';
+                    svgElement.style.borderRadius = '8px';
+                    svgElement.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                    svgElement.style.transition = 'all 0.3s ease';
+                });
+            } else {
+                console.error('インラインSVG要素が見つかりませんでした');
+                // 最終的なフォールバック
+                createFallbackDisplay(svgContainer);
             }
-        };
+        }
 
+        // モーダル関連の処理を修正
         if (showSvgButton && svgModal) {
             showSvgButton.addEventListener('click', () => {
+                // まずモーダルを表示
                 svgModal.classList.add('active');
                 document.body.classList.add('modal-open');
-                // モーダル表示時にSVGを読み込む
-                loadSvgContent();
+
+                // すぐにフォールバック表示を先に表示（ロード中の表示）
+                svgContainer.innerHTML = `
+                    <div style="text-align: center; padding: 30px; background: rgba(25, 25, 112, 0.7); border-radius: 10px; max-width: 500px; margin: 20px auto;">
+                        <h2 style="color: #FFD700; margin-bottom: 20px;">鑑定書サンプル</h2>
+                        <p style="color: white; margin-bottom: 20px;">読み込み中です。少々お待ちください...</p>
+                        <div class="loading-spinner" style="margin: 30px auto; width: 50px; height: 50px; border: 5px solid rgba(255,215,0,0.3); border-radius: 50%; border-top-color: #FFD700; animation: spin 1s linear infinite;"></div>
+                        <style>
+                            @keyframes spin {
+                                to { transform: rotate(360deg); }
+                            }
+                        </style>
+                    </div>
+                `;
+
+                // バックグラウンドでSVGを読み込む
+                setTimeout(() => {
+                    useSampleSvgFallback();
+                }, 100);
             });
         }
 
@@ -1039,6 +1349,219 @@
                  // ... (他のモーダルがあれば同様に)
             }
         });
+
+        // デスクトップ向けページコントロール
+        function addDesktopPageControls(svgContainer, svgElement, totalPages = 12) {
+            let currentPage = 0;
+
+            // コントロールコンテナ作成
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'svg-page-controls';
+            controlsDiv.style.cssText = 'display: flex; justify-content: center; align-items: center; margin: 15px 0; gap: 10px;';
+
+            // ナビゲーションボタンとページ表示
+            const prevBtn = createButton('前のページ', () => changePage(-1));
+            const pageInfo = document.createElement('span');
+            pageInfo.textContent = `ページ ${currentPage + 1}/${totalPages}`;
+            pageInfo.style.cssText = 'color: #F8F8FF; font-weight: bold;';
+            const nextBtn = createButton('次のページ', () => changePage(1));
+
+            // ジャンプ機能
+            const jumpContainer = document.createElement('div');
+            jumpContainer.style.cssText = 'display: flex; align-items: center; margin-left: 15px;';
+
+            const jumpLabel = document.createElement('span');
+            jumpLabel.textContent = 'ページ指定:';
+            jumpLabel.style.cssText = 'color: #F8F8FF; margin-right: 5px;';
+
+            const jumpInput = document.createElement('input');
+            jumpInput.type = 'number';
+            jumpInput.min = 1;
+            jumpInput.max = totalPages;
+            jumpInput.value = currentPage + 1;
+            jumpInput.style.cssText = `
+                width: 50px;
+                padding: 3px;
+                background: rgba(0,0,0,0.2);
+                color: #F8F8FF;
+                border: 1px solid rgba(255,255,255,0.3);
+                border-radius: 3px;
+            `;
+
+            const jumpBtn = createButton('移動', () => {
+                const targetPage = parseInt(jumpInput.value) - 1;
+                if (targetPage >= 0 && targetPage < totalPages) {
+                    currentPage = targetPage;
+                    updatePageView();
+                }
+            });
+
+            // 各ボタン作成用関数
+            function createButton(text, onClick) {
+                const btn = document.createElement('button');
+                btn.textContent = text;
+                btn.style.cssText = `
+                    padding: 5px 10px;
+                    background: rgba(72, 61, 139, 0.7);
+                    color: #F8F8FF;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+                `;
+                btn.addEventListener('click', onClick);
+                btn.addEventListener('mouseover', () => {
+                    btn.style.background = 'rgba(147, 112, 219, 0.7)';
+                });
+                btn.addEventListener('mouseout', () => {
+                    btn.style.background = 'rgba(72, 61, 139, 0.7)';
+                });
+                return btn;
+            }
+
+            // ページ変更関数
+            function changePage(delta) {
+                const newPage = currentPage + delta;
+                if (newPage >= 0 && newPage < totalPages) {
+                    currentPage = newPage;
+                    updatePageView();
+                }
+            }
+
+            // ページビュー更新関数
+            function updatePageView() {
+                updateSvgViewbox(svgElement, currentPage, totalPages);
+                pageInfo.textContent = `ページ ${currentPage + 1}/${totalPages}`;
+                jumpInput.value = currentPage + 1;
+
+                // ページが最初/最後の場合はボタンの表示を調整
+                prevBtn.disabled = currentPage === 0;
+                prevBtn.style.opacity = currentPage === 0 ? '0.3' : '1';
+                nextBtn.disabled = currentPage === totalPages - 1;
+                nextBtn.style.opacity = currentPage === totalPages - 1 ? '0.3' : '1';
+            }
+
+            // Enter キーでジャンプを実行
+            jumpInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const targetPage = parseInt(jumpInput.value) - 1;
+                    if (targetPage >= 0 && targetPage < totalPages) {
+                        currentPage = targetPage;
+                        updatePageView();
+                    }
+                }
+            });
+
+            // 要素を追加
+            controlsDiv.appendChild(prevBtn);
+            controlsDiv.appendChild(pageInfo);
+            controlsDiv.appendChild(nextBtn);
+
+            jumpContainer.appendChild(jumpLabel);
+            jumpContainer.appendChild(jumpInput);
+            jumpContainer.appendChild(jumpBtn);
+
+            controlsDiv.appendChild(jumpContainer);
+
+            // SVGコンテナに追加（SVGの前に追加）
+            svgContainer.insertBefore(controlsDiv, svgElement);
+
+            // SVG要素のスタイル調整
+            svgElement.style.cssText = `
+                width: 100%;
+                height: auto;
+                display: block;
+                margin: 0 auto;
+                max-height: 70vh;
+                background: rgba(25, 25, 112, 0.3);
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            `;
+
+            // SVGの表示比率を設定
+            svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+            // 初期ページを表示
+            updatePageView();
+
+            // コントロールパネルへの参照を返す（後の拡張のため）
+            return {
+                controlsDiv,
+                updatePageView,
+                currentPage: () => currentPage
+            };
+        }
+
+        // SVGビューボックス制御関数
+        function updateSvgViewbox(svgElement, pageIndex, totalPages = 12) {
+            // ページの高さは全体高さをページ数で割る
+            const pageHeight = 13200 / totalPages;
+            const yOffset = pageIndex * pageHeight;
+
+            // ビューボックスを更新（ページのみを表示）
+            svgElement.setAttribute('viewBox', `0 ${yOffset} 800 ${pageHeight}`);
+        }
+
+        // エラー時のフォールバック表示
+        function createFallbackDisplay(container) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px; background: rgba(25, 25, 112, 0.7); border-radius: 10px; max-width: 500px; margin: 0 auto;">
+                    <h2 style="color: #FFD700; margin-bottom: 20px;">鑑定書サンプル</h2>
+                    <p style="color: white; margin-bottom: 15px;">PDF形式の完全な鑑定書をご覧いただくには、プレミアムプランへのアップグレードが必要です。</p>
+
+                    <!-- サンプル鑑定書の静的表示 -->
+                    <div style="background: rgba(25, 25, 112, 0.5); padding: 20px; border-radius: 8px; margin: 20px auto; max-width: 400px;">
+                        <!-- サンプル表紙のHTML表示 -->
+                        <div style="border-radius: 5px; padding: 15px; background: linear-gradient(135deg, #191970 0%, #0E0E38 100%); margin-bottom: 20px;">
+                            <h3 style="color: #FFD700; text-align: center; font-size: 18px; margin-bottom: 10px;">ライフサイクル・ポテンシャル占術</h3>
+                            <h4 style="color: #9370DB; text-align: center; font-size: 14px; margin-bottom: 15px;">鑑定書</h4>
+                            <p style="color: white; text-align: center; font-size: 16px; margin: 25px 0;">山田 太郎 様</p>
+                            <p style="color: white; text-align: center; font-size: 12px;">生年月日: 1985年5月10日</p>
+                            <p style="color: white; text-align: center; font-size: 12px;">出生時刻: 12:30</p>
+                            <p style="color: white; text-align: center; font-size: 12px;">出生地: 東京都新宿区</p>
+                        </div>
+
+                        <!-- 目次サンプル -->
+                        <div style="border-radius: 5px; padding: 15px; background: linear-gradient(135deg, #191970 0%, #0E0E38 100%); margin-bottom: 20px;">
+                            <h4 style="color: #FFD700; text-align: center; margin-bottom: 15px;">目次</h4>
+                            <p style="color: white; font-size: 12px; margin: 5px 0;">1. 基本情報</p>
+                            <p style="color: white; font-size: 12px; margin: 5px 0;">2. コアエネルギー解説</p>
+                            <p style="color: white; font-size: 12px; margin: 5px 0;">3. 才能と人生のテーマ</p>
+                            <p style="color: white; font-size: 12px; margin: 5px 0;">4. 運命の流れと転機</p>
+                            <p style="color: white; font-size: 12px; margin: 5px 0;">5. 特定質問への回答</p>
+                        </div>
+                    </div>
+
+                    <p style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 15px;">※このサンプルはイメージです。実際の鑑定書はより詳細な内容となります。</p>
+
+                    <button style="background: rgba(255, 215, 0, 0.7); color: #191970; border: none;
+                                 padding: 12px 20px; border-radius: 5px; font-weight: bold; margin-top: 20px;
+                                 box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                                 cursor: pointer;">
+                        詳細をみる
+                    </button>
+                </div>
+            `;
+
+            // フォールバック表示のボタンにイベントリスナーを追加
+            const detailButton = container.querySelector('button');
+            if (detailButton) {
+                detailButton.addEventListener('click', () => {
+                    // もう一度SVG読み込みを試みるか、別の処理を実行
+                    const premiumButton = document.getElementById('premium-purchase-button');
+                    if (premiumButton) {
+                        premiumButton.scrollIntoView({ behavior: 'smooth' });
+                    }
+
+                    // モーダルを閉じる
+                    const svgModal = document.getElementById('svg-modal');
+                    if (svgModal && svgModal.classList.contains('active')) {
+                        svgModal.classList.remove('active');
+                        document.body.classList.remove('modal-open');
+                    }
+                });
+            }
+        }
     });
     </script>
 </body>

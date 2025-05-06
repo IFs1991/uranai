@@ -1,0 +1,436 @@
+title: スマホ向けSVGビューア改善計画
+description: モバイルファーストでユーザー体験を向上させるSVGビューアのUIリデザイン
+date: 2025-05-05
+
+problem_statement:
+  summary: 現在のSVGビューアUIはデスクトップでは機能するが、スマートフォンでの操作性に問題がある
+  issues:
+    - ボタンが小さく、モバイルでタップしづらい
+    - 画面スペースの使い方が非効率的
+    - 操作方法が直感的でない
+    - 視認性に問題がある（コントラスト不足、テキストサイズ）
+    - スワイプなどのモバイルジェスチャーに対応していない
+
+solution_approach:
+  overview: モバイルファーストの設計原則を適用し、タッチスクリーンに最適化したインターフェースにリデザイン
+  key_principles:
+    - 十分な大きさのタッチターゲットを提供
+    - 直感的なジェスチャー操作をサポート
+    - 視覚的階層を明確化
+    - 画面スペースを効率的に活用
+    - フィードバックを明確に提供
+
+ui_components:
+  layout:
+    - 固定位置のナビゲーションコントロール
+    - 全画面SVG表示領域
+    - 必要に応じて表示/非表示可能なUI要素
+    - フローティングページジャンプボタン
+
+  navigation_controls:
+    - 大型の前/次ページボタン（最低60x60px）
+    - 明確なページ番号表示
+    - スワイプでのページめくり機能
+    - 特定ページへのジャンプ機能
+
+  visual_design:
+    - 高コントラストで視認性の高い色彩
+    - 半透明オーバーレイによるレイヤー感の表現
+    - 状態変化の明確な視覚的フィードバック
+    - アクセス可能性を考慮したサイズと配色
+
+implementation_code:
+  js_function: |
+    // モバイル向けSVGビューア実装
+    function createMobileOptimizedSVGViewer(svgContainer, svgElement, totalPages = 12) {
+      // 現在のページ
+      let currentPage = 0;
+
+      // メインコンテナのスタイル設定
+      svgContainer.style.cssText = `
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+        touch-action: pan-y pinch-zoom;
+      `;
+
+      // SVG要素のスタイル設定
+      svgElement.style.cssText = `
+        width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        background: rgba(25, 25, 112, 0.5);
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      `;
+
+      // ページコントロールコンテナ
+      const controlsContainer = document.createElement('div');
+      controlsContainer.className = 'svg-mobile-controls';
+      controlsContainer.style.cssText = `
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: rgba(25, 25, 112, 0.9);
+        padding: 15px 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+        backdrop-filter: blur(5px);
+        border-top: 1px solid rgba(255, 215, 0, 0.3);
+      `;
+
+      // ページナビゲーションエリア
+      const pageInfoContainer = document.createElement('div');
+      pageInfoContainer.style.cssText = `
+        color: #FFD700;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        flex: 1;
+      `;
+      pageInfoContainer.textContent = `${currentPage + 1}/${totalPages}`;
+
+      // ページ移動ボタン - 戻る
+      const prevButton = document.createElement('button');
+      prevButton.innerHTML = '&larr;';
+      prevButton.style.cssText = `
+        width: 60px;
+        height: 60px;
+        border-radius: 30px;
+        font-size: 24px;
+        background: rgba(72, 61, 139, 0.8);
+        color: #FFFFFF;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      `;
+
+      // ページ移動ボタン - 進む
+      const nextButton = document.createElement('button');
+      nextButton.innerHTML = '&rarr;';
+      nextButton.style.cssText = prevButton.style.cssText;
+
+      // コントロールに要素を追加
+      controlsContainer.appendChild(prevButton);
+      controlsContainer.appendChild(pageInfoContainer);
+      controlsContainer.appendChild(nextButton);
+
+      // ページめくり関数
+      function updatePage(newPage) {
+        if (newPage >= 0 && newPage < totalPages) {
+          currentPage = newPage;
+          const pageHeight = 13200 / totalPages;
+          const yOffset = currentPage * pageHeight;
+          svgElement.setAttribute('viewBox', `0 ${yOffset} 800 ${pageHeight}`);
+          pageInfoContainer.textContent = `${currentPage + 1}/${totalPages}`;
+
+          // ページが最初/最後の場合はボタンの表示を調整
+          prevButton.style.opacity = currentPage === 0 ? '0.3' : '1';
+          nextButton.style.opacity = currentPage === totalPages - 1 ? '0.3' : '1';
+        }
+      }
+
+      // ボタンイベント設定
+      prevButton.addEventListener('click', () => updatePage(currentPage - 1));
+      nextButton.addEventListener('click', () => updatePage(currentPage + 1));
+
+      // スワイプによるページ移動サポート
+      let touchStartX = 0;
+      let touchEndX = 0;
+
+      svgContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      svgContainer.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      }, { passive: true });
+
+      function handleSwipe() {
+        const swipeThreshold = 50;
+        const swipeDistance = touchStartX - touchEndX;
+
+        if (Math.abs(swipeDistance) > swipeThreshold) {
+          if (swipeDistance > 0) {
+            // 左スワイプ - 次のページ
+            updatePage(currentPage + 1);
+          } else {
+            // 右スワイプ - 前のページ
+            updatePage(currentPage - 1);
+          }
+        }
+      }
+
+      // ページジャンプUI - タップで表示/非表示可能
+      const pageJumpButton = document.createElement('button');
+      pageJumpButton.textContent = '…';
+      pageJumpButton.style.cssText = `
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 20px;
+        background: rgba(255, 215, 0, 0.7);
+        color: #191970;
+        font-size: 20px;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 101;
+      `;
+
+      const pageJumpPanel = document.createElement('div');
+      pageJumpPanel.style.cssText = `
+        position: fixed;
+        bottom: 90px;
+        right: 20px;
+        background: rgba(25, 25, 112, 0.9);
+        border-radius: 12px;
+        padding: 15px;
+        z-index: 101;
+        display: none;
+        flex-direction: column;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+      `;
+
+      const pageInput = document.createElement('input');
+      pageInput.type = 'number';
+      pageInput.min = 1;
+      pageInput.max = totalPages;
+      pageInput.value = currentPage + 1;
+      pageInput.style.cssText = `
+        width: 80px;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 215, 0, 0.5);
+        background: rgba(0, 0, 0, 0.2);
+        color: #FFFFFF;
+        font-size: 16px;
+        text-align: center;
+        margin-bottom: 10px;
+      `;
+
+      const jumpButton = document.createElement('button');
+      jumpButton.textContent = '移動';
+      jumpButton.style.cssText = `
+        padding: 10px;
+        border-radius: 5px;
+        background: rgba(255, 215, 0, 0.7);
+        color: #191970;
+        border: none;
+        font-weight: bold;
+      `;
+
+      pageJumpPanel.appendChild(pageInput);
+      pageJumpPanel.appendChild(jumpButton);
+
+      // ジャンプパネル表示切替
+      pageJumpButton.addEventListener('click', () => {
+        if (pageJumpPanel.style.display === 'none') {
+          pageJumpPanel.style.display = 'flex';
+          pageInput.value = currentPage + 1;
+          pageInput.focus();
+        } else {
+          pageJumpPanel.style.display = 'none';
+        }
+      });
+
+      // ジャンプボタン処理
+      jumpButton.addEventListener('click', () => {
+        const targetPage = parseInt(pageInput.value) - 1;
+        updatePage(targetPage);
+        pageJumpPanel.style.display = 'none';
+      });
+
+      // 要素をページに追加
+      svgContainer.appendChild(controlsContainer);
+      svgContainer.appendChild(pageJumpButton);
+      svgContainer.appendChild(pageJumpPanel);
+
+      // ページ表示の初期化
+      updatePage(0);
+
+      // シングルタップでコントロールを表示/非表示する機能
+      let controlsVisible = true;
+      svgContainer.addEventListener('click', (e) => {
+        // コントロール上のクリックは無視
+        if (e.target === svgElement) {
+          controlsVisible = !controlsVisible;
+          controlsContainer.style.transform = controlsVisible ? 'translateY(0)' : 'translateY(100%)';
+          controlsContainer.style.transition = 'transform 0.3s ease';
+        }
+      });
+
+      // 使いやすさのためのヘルプヒント表示
+      const helpTip = document.createElement('div');
+      helpTip.textContent = '← スワイプしてページめくり →';
+      helpTip.style.cssText = `
+        position: absolute;
+        top: 20px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 20px;
+        margin: 0 auto;
+        max-width: 80%;
+        opacity: 0.8;
+      `;
+
+      svgContainer.appendChild(helpTip);
+
+      // 5秒後にヒントを非表示
+      setTimeout(() => {
+        helpTip.style.transition = 'opacity 1s ease';
+        helpTip.style.opacity = '0';
+      }, 5000);
+    }
+
+  integration_code: |
+    // 既存のloadSvgContent関数を修正して新しいビューアを統合
+    const loadSvgContent = async () => {
+      // コンテナをクリア
+      svgContainer.innerHTML = '<p style="text-align: center; padding: 20px;">読み込み中...</p>';
+
+      try {
+        // SVGファイルを読み込む (絶対パスに修正)
+        const response = await fetch('/assets/sample.svg');
+        if (!response.ok) {
+          throw new Error(`SVGの読み込みに失敗しました: ${response.status} ${response.statusText}`);
+        }
+
+        const svgText = await response.text();
+        svgContainer.innerHTML = svgText;
+
+        // 読み込んだSVG要素を取得
+        const svgElement = svgContainer.querySelector('svg');
+        if (svgElement) {
+          // モバイルデバイスの検出
+          const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+
+          if (isMobile) {
+            // モバイル向け最適化ビューアを適用
+            createMobileOptimizedSVGViewer(svgContainer, svgElement, 12);
+          } else {
+            // デスクトップ向けスタイル
+            svgElement.style.width = '100%';
+            svgElement.style.height = 'auto';
+            svgElement.style.maxHeight = '70vh';
+            svgElement.style.display = 'block';
+            svgElement.style.margin = 'auto';
+
+            // デスクトップ向けのページコントロールを追加
+            addDesktopPageControls(svgContainer, svgElement, 12);
+          }
+        } else {
+          throw new Error('SVG要素が見つかりませんでした');
+        }
+      } catch (error) {
+        console.error('SVG読み込みエラー:', error);
+        svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの読み込みに失敗しました。<br>${error.message}</p>`;
+
+        // エラー時のフォールバック - シンプルな代替表示
+        createFallbackDisplay(svgContainer);
+      }
+    };
+
+implementation_steps:
+  - step: 既存コードの分析と修正ポイントの特定
+    details: SVG読み込み処理とUIコンポーネント生成部分を特定し、変更計画を立てる
+
+  - step: モバイルデバイス検出機能の実装
+    details: ビューポート幅やタッチ機能の有無でモバイルデバイスを検出
+
+  - step: モバイル向けUIコンポーネントの作成
+    details: createMobileOptimizedSVGViewer関数の実装と統合
+
+  - step: スワイプ処理の実装
+    details: タッチイベントをキャプチャしてページめくり機能と連携
+
+  - step: 視覚的フィードバックの最適化
+    details: ボタン状態、ページ移動、ヘルプヒントの実装
+
+  - step: 反応性とパフォーマンスの最適化
+    details: トランジションの滑らかさとタッチ応答性の確保
+
+mobile_specific_optimizations:
+  - タッチターゲットのサイズ拡大（最小44x44px、推奨60x60px）
+  - スワイプジェスチャーの対応
+  - ビューポート最適化（ビューの拡大縮小防止）
+  - シングルタップでのUI表示/非表示切り替え
+  - ユーザー補助のためのヒント表示
+  - input要素とキーボード操作の最適化
+
+fallback_strategy:
+  description: SVG読み込み失敗時のフォールバック表示
+  implementation: |
+    function createFallbackDisplay(container) {
+      container.innerHTML = `
+        <div style="text-align: center; padding: 30px; background: rgba(25, 25, 112, 0.7); border-radius: 10px;">
+          <h2 style="color: #FFD700; margin-bottom: 20px;">鑑定書サンプル</h2>
+          <p style="color: white; margin-bottom: 15px;">PDF形式の完全な鑑定書をご覧いただくには、プレミアムプランへのアップグレードが必要です。</p>
+          <div style="width: 80%; max-width: 300px; height: 150px; background: rgba(0,0,0,0.3);
+                      margin: 20px auto; border-radius: 5px; display: flex; align-items: center;
+                      justify-content: center; border: 1px dashed rgba(255,215,0,0.5);">
+            <span style="color: rgba(255,255,255,0.7);">プレビュー画像</span>
+          </div>
+          <button style="background: rgba(255, 215, 0, 0.7); color: #191970; border: none;
+                         padding: 12px 20px; border-radius: 5px; font-weight: bold; margin-top: 20px;">
+            詳細をみる
+          </button>
+        </div>
+      `;
+    }
+
+testing_plan:
+  devices:
+    - iPhoneシリーズ (Safari)
+    - Androidスマートフォン (Chrome)
+    - iPad/Androidタブレット
+    - デスクトップブラウザ (レスポンシブモード)
+
+  test_scenarios:
+    - ページの読み込みと初期表示
+    - ボタンによるページナビゲーション
+    - スワイプによるページめくり
+    - ページジャンプ機能
+    - UIの表示/非表示切り替え
+    - エラー時のフォールバック表示
+    - さまざまな画面サイズでの表示
+    - パフォーマンスと応答性
+
+  accessibility_checks:
+    - コントラスト比（WCAG AA基準以上）
+    - タッチターゲットサイズ
+    - 操作フィードバックの明確さ
+    - キーボードアクセシビリティ
+
+success_metrics:
+  - SVGファイルが読みやすいサイズでページ単位で表示される
+  - スマートフォンでスワイプ操作でページめくりができる
+  - ユーザーが直感的にページを切り替えることができる
+  - エラー発生時でも代替コンテンツが表示される
+  - すべての主要モバイルブラウザで正しく表示・操作できる
+  - 長いSVGファイルを効率的に閲覧できる
+
+notes_and_considerations:
+  - サーバーサイドでのSVG最適化も検討（プリレンダリングなど）
+  - Progressive Enhancementアプローチでベースライン機能の保証
+  - モバイル接続速度を考慮したSVGファイルサイズ最適化
+  - キャッシング戦略の検討
+  - 今後の拡張性（ズーム機能、アノテーション機能など）

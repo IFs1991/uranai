@@ -1,0 +1,341 @@
+title: SVGビューア改善計画 - ページ選択機能実装
+description: 長大なSVGファイルを効率的に表示するためのページ選択機能実装計画
+date: 2025-05-05
+
+problem_statement:
+  summary: SVGファイルが極端に縦長で、モーダル内で適切に表示されていない
+  details:
+    - SVGファイルは13200pxの高さがあり、単一ビューでは判読不能なほど縮小されている
+    - 現在のビューワーには、特定ページにジャンプする機能がない
+    - ユーザーエクスペリエンスとしてページ単位での閲覧が望ましい
+
+solution_approach:
+  overview: SVGファイルをページ単位で表示し、ユーザーが簡単にページを切り替えられる機能を実装する
+  key_components:
+    - SVGのviewBox属性を動的に制御してページ単位で表示
+    - ページナビゲーションUIを追加
+    - ページ番号と総ページ数の表示
+    - ページジャンプ機能（オプション）
+
+implementation_phases:
+  phase_1:
+    name: 基本的なページ表示制御の実装
+    tasks:
+      - SVGのviewBox属性を操作するロジックの作成
+      - ページ分割の計算と実装
+      - 前後ページのナビゲーションUI追加
+
+  phase_2:
+    name: ユーザーインターフェース強化
+    tasks:
+      - ページ番号表示の洗練
+      - 操作説明ツールチップの追加
+      - モバイル対応の確認と最適化
+
+  phase_3:
+    name: 拡張機能
+    tasks:
+      - ページ一覧サムネイル表示（オプション）
+      - 特定ページへのジャンプ機能
+      - ズーム機能の追加
+
+code_changes:
+  files:
+    - path: index.html
+      changes:
+        - add_svg_page_controls_html
+
+    - path: main JavaScript file
+      changes:
+        - add_page_navigation_logic
+        - modify_svg_loading_function
+        - add_viewbox_calculation
+
+detailed_implementation:
+  svg_pagination_logic: |
+    // SVGビューボックス制御関数
+    function updateSvgViewbox(svgElement, pageIndex, totalPages = 12) {
+      // ページの高さは全体高さをページ数で割る
+      const pageHeight = 13200 / totalPages;
+      const yOffset = pageIndex * pageHeight;
+
+      // ビューボックスを更新（ページのみを表示）
+      svgElement.setAttribute('viewBox', `0 ${yOffset} 800 ${pageHeight}`);
+    }
+
+    // ページコントロール生成関数
+    function addPageControls(svgContainer, svgElement, totalPages = 12) {
+      let currentPage = 0;
+
+      // コントロールコンテナ作成
+      const controlsDiv = document.createElement('div');
+      controlsDiv.className = 'svg-page-controls';
+      controlsDiv.style.cssText = 'display: flex; justify-content: center; align-items: center; margin: 15px 0; gap: 10px;';
+
+      // ナビゲーションボタンとページ表示
+      const prevBtn = createButton('前のページ', () => changePage(-1));
+      const pageInfo = document.createElement('span');
+      pageInfo.textContent = `ページ ${currentPage + 1}/${totalPages}`;
+      pageInfo.style.cssText = 'color: #F8F8FF; font-weight: bold;';
+      const nextBtn = createButton('次のページ', () => changePage(1));
+
+      // ジャンプ機能（オプション）
+      const jumpContainer = document.createElement('div');
+      jumpContainer.style.cssText = 'display: flex; align-items: center; margin-left: 15px;';
+
+      const jumpLabel = document.createElement('span');
+      jumpLabel.textContent = 'ページ指定:';
+      jumpLabel.style.cssText = 'color: #F8F8FF; margin-right: 5px;';
+
+      const jumpInput = document.createElement('input');
+      jumpInput.type = 'number';
+      jumpInput.min = 1;
+      jumpInput.max = totalPages;
+      jumpInput.value = currentPage + 1;
+      jumpInput.style.cssText = 'width: 50px; padding: 3px; background: rgba(0,0,0,0.2); color: #F8F8FF; border: 1px solid rgba(255,255,255,0.3); border-radius: 3px;';
+
+      const jumpBtn = createButton('移動', () => {
+        const targetPage = parseInt(jumpInput.value) - 1;
+        if (targetPage >= 0 && targetPage < totalPages) {
+          currentPage = targetPage;
+          updatePageView();
+        }
+      });
+
+      // 各ボタン作成用関数
+      function createButton(text, onClick) {
+        const btn = document.createElement('button');
+        btn.textContent = text;
+        btn.style.cssText = 'padding: 5px 10px; background: rgba(72, 61, 139, 0.7); color: #F8F8FF; border: none; border-radius: 5px; cursor: pointer;';
+        btn.addEventListener('click', onClick);
+        btn.addEventListener('mouseover', () => {
+          btn.style.background = 'rgba(147, 112, 219, 0.7)';
+        });
+        btn.addEventListener('mouseout', () => {
+          btn.style.background = 'rgba(72, 61, 139, 0.7)';
+        });
+        return btn;
+      }
+
+      // ページ変更関数
+      function changePage(delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 0 && newPage < totalPages) {
+          currentPage = newPage;
+          updatePageView();
+        }
+      }
+
+      // ページビュー更新関数
+      function updatePageView() {
+        updateSvgViewbox(svgElement, currentPage, totalPages);
+        pageInfo.textContent = `ページ ${currentPage + 1}/${totalPages}`;
+        jumpInput.value = currentPage + 1;
+      }
+
+      // 要素を追加
+      controlsDiv.appendChild(prevBtn);
+      controlsDiv.appendChild(pageInfo);
+      controlsDiv.appendChild(nextBtn);
+
+      jumpContainer.appendChild(jumpLabel);
+      jumpContainer.appendChild(jumpInput);
+      jumpContainer.appendChild(jumpBtn);
+
+      controlsDiv.appendChild(jumpContainer);
+
+      // SVGコンテナの前に追加
+      svgContainer.insertBefore(controlsDiv, svgContainer.firstChild);
+
+      // 初期ページを表示
+      updatePageView();
+
+      // コントロールパネルへの参照を返す（後の拡張のため）
+      return {
+        controlsDiv,
+        updatePageView,
+        currentPage: () => currentPage
+      };
+    }
+
+  svg_loading_modification: |
+    // SVGファイル読み込み関数の修正
+    const loadSvgContent = async () => {
+      // コンテナをクリア
+      svgContainer.innerHTML = '<p style="text-align: center; padding: 20px;">読み込み中...</p>';
+
+      try {
+        // SVGファイルを読み込む
+        const response = await fetch('/assets/sample.svg'); // 絶対パスに修正
+        if (!response.ok) {
+          throw new Error(`SVGの読み込みに失敗しました: ${response.status} ${response.statusText}`);
+        }
+
+        const svgText = await response.text();
+        svgContainer.innerHTML = svgText;
+
+        // 読み込んだSVG要素を取得
+        const svgElement = svgContainer.querySelector('svg');
+        if (svgElement) {
+          // スタイルを適用
+          svgElement.style.width = '100%';
+          svgElement.style.height = 'auto';
+          svgElement.style.display = 'block';
+          svgElement.style.margin = 'auto';
+          svgElement.style.background = 'rgba(25, 25, 112, 0.3)';
+          svgElement.style.borderRadius = '8px';
+
+          // SVGの寸法を取得
+          const originalViewBox = svgElement.getAttribute('viewBox');
+          const viewBoxParts = originalViewBox ? originalViewBox.split(' ').map(Number) : [0, 0, 800, 13200];
+          const svgWidth = viewBoxParts[2];
+          const svgHeight = viewBoxParts[3];
+
+          // 総ページ数を計算（SVGは12ページと仮定）
+          const totalPages = 12;
+
+          // ページコントロールを追加
+          const pageControls = addPageControls(svgContainer, svgElement, totalPages);
+
+          // SVGコンテナを調整
+          svgContainer.style.textAlign = 'center';
+        } else {
+          console.warn('読み込んだコンテンツ内にSVG要素が見つかりませんでした。');
+          svgContainer.innerHTML = '<p style="color: #ffcc00; text-align: center; padding: 20px;">SVG形式が正しくない可能性があります。</p>';
+        }
+      } catch (error) {
+        console.error('SVG読み込みエラー:', error);
+        svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの読み込みに失敗しました。<br>${error.message}</p>`;
+      }
+    };
+
+  fallback_inline_svg: |
+    // SVGの読み込みに失敗した場合のフォールバック
+    // インラインSVGを使用するバージョン
+    const loadInlineSvgContent = () => {
+      try {
+        // インラインSVGスタブを使用（最低限のSVG構造）
+        const svgContent = `
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 1100" font-family="sans-serif">
+          <rect width="800" height="1100" fill="#191970" />
+          <text x="400" y="280" font-size="36" fill="#FFD700" text-anchor="middle">ライフサイクル・ポテンシャル占術</text>
+          <text x="400" y="340" font-size="18" font-weight="bold" fill="#9370DB" text-anchor="middle">鑑定書</text>
+          <text x="400" y="500" font-size="24" font-weight="bold" fill="#F8F8FF" text-anchor="middle">山田 太郎 様</text>
+          <text x="400" y="560" font-size="12" fill="#F8F8FF" text-anchor="middle">生年月日: 1985年5月10日</text>
+          <text x="400" y="585" font-size="12" fill="#F8F8FF" text-anchor="middle">出生時刻: 12:30</text>
+          <text x="400" y="610" font-size="12" fill="#F8F8FF" text-anchor="middle">出生地: 東京都新宿区</text>
+          <text x="400" y="700" font-size="14" fill="#FFD700" text-anchor="middle">PDF版をご購入いただくと</text>
+          <text x="400" y="730" font-size="14" fill="#FFD700" text-anchor="middle">すべてのページをご覧いただけます</text>
+        </svg>
+        `;
+
+        svgContainer.innerHTML = svgContent;
+
+        // この場合もスタイル適用と操作UIは同様に追加
+        const svgElement = svgContainer.querySelector('svg');
+        if (svgElement) {
+          svgElement.style.width = '100%';
+          svgElement.style.maxWidth = '800px';
+          svgElement.style.height = 'auto';
+          svgElement.style.display = 'block';
+          svgElement.style.margin = 'auto';
+          svgElement.style.background = 'rgba(25, 25, 112, 0.3)';
+          svgElement.style.borderRadius = '8px';
+
+          // サンプル表示用に最低限のページ切り替え機能
+          const totalPages = 3; // サンプルとして3ページのみ
+          addPageControls(svgContainer, svgElement, totalPages);
+        }
+      } catch (error) {
+        console.error('インラインSVG処理エラー:', error);
+        svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの処理に失敗しました。<br>${error.message}</p>`;
+      }
+    };
+
+mobile_optimization:
+  responsive_design:
+    - ページコントロールをモバイル画面サイズに合わせて調整
+    - タッチ操作のサポート（スワイプでページ切り替え）
+    - ボタンサイズの拡大と間隔の調整
+
+  mobile_specific_code: |
+    // タッチデバイス対応
+    function addTouchSupport(svgElement, pageControls) {
+      let startX = null;
+      let endX = null;
+
+      svgElement.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+      });
+
+      svgElement.addEventListener('touchend', (e) => {
+        endX = e.changedTouches[0].clientX;
+        handleSwipe();
+      });
+
+      function handleSwipe() {
+        if (!startX || !endX) return;
+
+        const diff = startX - endX;
+        const threshold = 50; // スワイプ検出の閾値
+
+        if (Math.abs(diff) > threshold) {
+          if (diff > 0) {
+            // 左スワイプ → 次のページ
+            const event = new Event('click');
+            document.querySelector('.svg-page-controls button:nth-child(3)').dispatchEvent(event);
+          } else {
+            // 右スワイプ → 前のページ
+            const event = new Event('click');
+            document.querySelector('.svg-page-controls button:nth-child(1)').dispatchEvent(event);
+          }
+        }
+
+        // リセット
+        startX = null;
+        endX = null;
+      }
+    }
+
+testing_plan:
+  scenarios:
+    - name: 基本機能テスト
+      steps:
+        - サーバーを起動
+        - ブラウザでアプリケーションにアクセス（http://localhost:3000）
+        - 「鑑定書サンプルを見る」ボタンをクリック
+        - SVGが1ページ目で表示されることを確認
+        - ページナビゲーションボタンをクリック
+        - ページが切り替わることを確認
+
+    - name: エラーハンドリングテスト
+      steps:
+        - ネットワーク接続を切断（またはサーバー停止）
+        - 「鑑定書サンプルを見る」ボタンをクリック
+        - エラーメッセージが適切に表示されることを確認
+        - フォールバックのインラインSVGが表示されるか確認
+
+    - name: 異なるデバイステスト
+      steps:
+        - デスクトップブラウザでの表示確認
+        - タブレットでの表示確認
+        - スマートフォンでの表示確認
+        - 各デバイスでページナビゲーションが機能するか確認
+
+implementation_notes:
+  - PDFダウンロードボタンは最初のページにのみ表示する設計も検討
+  - Webフォントが適切に読み込まれているか確認（日本語フォントの問題がある場合あり）
+  - SVGの読み込みではCORSの問題が発生する可能性があるため、サーバー側での適切なヘッダー設定が必要
+  - ビューポート調整のロジックを適宜調整して、各ページの適切な高さを表示する
+
+expected_outcomes:
+  - SVGファイルが読みやすいサイズでページ単位で表示される
+  - ユーザーが直感的にページを切り替えることができる
+  - エラー発生時にも代替コンテンツが表示される
+  - モバイルを含むさまざまなデバイスで正しく表示・操作できる
+
+completion_criteria:
+  - すべてのページが正しく表示され、ナビゲーションが機能する
+  - エラー時の代替表示が実装されている
+  - モバイルデバイスでの表示と操作が最適化されている
+  - ブラウザの開発者ツールでコンソールエラーが発生しない

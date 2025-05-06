@@ -26,6 +26,11 @@ const server = http.createServer(async (req, res) => {
     let requestedPath = decodedUrl.split('?')[0]; // クエリパラメータを除去
     let filePath = path.normalize(path.join(__dirname, requestedPath)); // __dirname基準で絶対パス化
 
+    // デバッグログ追加
+    console.log(`リクエストパス: ${requestedPath}`);
+    console.log(`解決されたファイルパス: ${filePath}`);
+    console.log(`__dirnameの値: ${__dirname}`);
+
     // ルートパスのリクエストはindex.htmlに
     if (requestedPath === '/') {
       filePath = path.join(__dirname, 'index.html');

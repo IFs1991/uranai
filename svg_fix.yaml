@@ -1,0 +1,166 @@
+title: SVG読み込み問題の解決手順
+description: 「SVGの読み込みに失敗しました: 404 Not Found」エラーを修正するための手順
+
+problem:
+  summary: WebサイトでSVGファイル（assets/sample.svg）の読み込みに失敗し、404エラーが発生している
+  symptoms:
+    - モーダルでSVGを表示しようとすると「SVGの読み込みに失敗しました: 404 Not Found」エラーが表示される
+    - サーバーコンソールに「ファイルが見つかりません」というログが出力されている可能性がある
+
+possible_causes:
+  - ファイルパスの指定方法（相対パスと絶対パス）の問題
+  - サーバー側のファイル解決ロジックの問題
+  - ファイル構造とファイルの配置の不一致
+  - ファイル名の大文字・小文字の違い（特にLinux環境）
+
+solutions:
+  # 解決策1: クライアントコードでの絶対パス使用
+  solution_1:
+    title: クライアント側コードで絶対パスを使用する
+    description: フェッチするURLのパスを相対パスから絶対パスに変更
+    file_path: index.html（もしくはJavaScriptファイル）
+    code_changes:
+      - before: |
+          const response = await fetch('assets/sample.svg');
+        after: |
+          const response = await fetch('/assets/sample.svg');
+    notes: 先頭にスラッシュを追加してサーバールートからの絶対パスに変更します
+
+  # 解決策2: インラインSVG方式の実装
+  solution_2:
+    title: インラインSVGを使用する（最も確実な方法）
+    description: SVGファイルの内容を直接JavaScriptコードに埋め込む
+    file_path: index.html（もしくはJavaScriptファイル）
+    code_changes:
+      - before: |
+          const loadSvgContent = async () => {
+              // コンテナをクリア
+              svgContainer.innerHTML = '<p style="text-align: center; padding: 20px;">読み込み中...</p>';
+              try {
+                  // assetsディレクトリ内のsample.svgをfetch
+                  const response = await fetch('assets/sample.svg');
+                  if (!response.ok) {
+                      throw new Error(`SVGの読み込みに失敗しました: ${response.status} ${response.statusText}`);
+                  }
+                  const svgText = await response.text();
+                  svgContainer.innerHTML = svgText;
+
+                  // SVG要素のスタイル適用
+                  const svgElement = svgContainer.querySelector('svg');
+                  if (svgElement) {
+                      svgElement.style.width = '100%';
+                      svgElement.style.height = 'auto';
+                      svgElement.style.maxHeight = '70vh';
+                      svgElement.style.display = 'block';
+                      svgElement.style.margin = 'auto';
+                  }
+              } catch (error) {
+                  console.error('SVG読み込みエラー:', error);
+                  svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの読み込みに失敗しました。<br>${error.message}</p>`;
+              }
+          };
+        after: |
+          const loadSvgContent = () => {
+              // コンテナをクリア
+              svgContainer.innerHTML = '<p style="text-align: center; padding: 20px;">読み込み中...</p>';
+              try {
+                  // SVGの内容を直接指定
+                  const svgContent = `
+                  <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 800 13200" font-family="sans-serif">
+                      <!-- SVGのdefs部分 -->
+                      <defs>
+                          <linearGradient id="backgroundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stop-color="#191970" />
+                              <stop offset="100%" stop-color="#0E0E38" />
+                          </linearGradient>
+                          <!-- その他のデザイン定義要素 -->
+                          <!-- 実際のSVGデータからコピー -->
+                      </defs>
+
+                      <!-- 背景要素 -->
+                      <rect width="800" height="13200" fill="url(#backgroundGradient)" />
+                      <rect width="800" height="13200" fill="url(#starsPattern)" opacity="0.7" />
+
+                      <!-- メインコンテンツ -->
+                      <text x="400" y="280" font-family="'Hannari Mincho', serif" font-size="36" fill="#FFD700" text-anchor="middle">ライフサイクル・ポテンシャル占術</text>
+                      <text x="400" y="340" font-size="18" font-weight="bold" fill="#9370DB" text-anchor="middle">鑑定書</text>
+
+                      <!-- その他のSVG要素 -->
+                      <!-- 実際のSVGデータからコピーして配置 -->
+                  </svg>
+                  `;
+
+                  svgContainer.innerHTML = svgContent;
+
+                  // SVG要素のスタイル適用
+                  const svgElement = svgContainer.querySelector('svg');
+                  if (svgElement) {
+                      svgElement.style.width = '100%';
+                      svgElement.style.height = 'auto';
+                      svgElement.style.maxHeight = '70vh';
+                      svgElement.style.display = 'block';
+                      svgElement.style.margin = 'auto';
+                  }
+              } catch (error) {
+                  console.error('SVG処理エラー:', error);
+                  svgContainer.innerHTML = `<p style="color: #ff5252; text-align: center; padding: 20px;">SVGの処理に失敗しました。<br>${error.message}</p>`;
+              }
+          };
+    notes: SVGデータは「document_content」から取得できます。fetchを使わずに直接SVGを埋め込むことで、サーバーへのリクエストを回避します。
+
+  # 解決策3: サーバー側にデバッグコードを追加
+  solution_3:
+    title: サーバー側にデバッグコードを追加
+    description: server.jsにデバッグ用のログ出力を追加して、問題を特定
+    file_path: server.js
+    code_changes:
+      - before: |
+          // URLデコードとパス正規化
+          let decodedUrl = decodeURIComponent(req.url);
+          let requestedPath = decodedUrl.split('?')[0]; // クエリパラメータを除去
+          let filePath = path.normalize(path.join(__dirname, requestedPath)); // __dirname基準で絶対パス化
+        after: |
+          // URLデコードとパス正規化
+          let decodedUrl = decodeURIComponent(req.url);
+          let requestedPath = decodedUrl.split('?')[0]; // クエリパラメータを除去
+          let filePath = path.normalize(path.join(__dirname, requestedPath)); // __dirname基準で絶対パス化
+
+          // デバッグログ追加
+          console.log(`リクエストパス: ${requestedPath}`);
+          console.log(`解決されたファイルパス: ${filePath}`);
+          console.log(`__dirnameの値: ${__dirname}`);
+    notes: これらのログ出力により、サーバーがどのパスでファイルを探しているかが分かり、問題の原因特定に役立ちます
+
+  # 解決策4: ファイル構造の確認
+  solution_4:
+    title: ファイル構造を確認
+    description: プロジェクトの構造とファイルの配置が正しいか確認
+    steps:
+      - step: server.jsが実行されているディレクトリに「assets」フォルダが存在するか確認
+      - step: assets フォルダ内に「sample.svg」ファイルが存在するか確認
+      - step: ファイル名の大文字小文字が正確か確認（Linux環境では大文字小文字が区別される）
+      - step: サーバー起動コマンドがプロジェクトのルートディレクトリで実行されているか確認
+    expected_structure: |
+      プロジェクトフォルダ/
+      ├── server.js
+      ├── index.html
+      └── assets/
+          └── sample.svg
+
+implementation_steps:
+  - step: サーバーログで実際に発生しているエラーを確認
+    details: コンソールログで「ファイルが見つかりません」エラーの詳細を確認
+  - step: クライアント側コードで絶対パスを使用するよう修正（解決策1）
+    details: 先頭にスラッシュを追加してサーバールートからの絶対パスに変更
+  - step: 上記の修正で解決しない場合、インラインSVG方式に切り替え（解決策2）
+    details: SVGデータを直接JavaScriptに埋め込んで、サーバーリクエストを回避
+  - step: サーバー側に必要に応じてデバッグコードを追加し、問題を追跡（解決策3）
+    details: リクエストパスとファイルパスの対応関係を確認
+  - step: ファイル構造とパス解決を整合させる（解決策4）
+    details: プロジェクト構造を確認し、必要に応じてファイルを移動または名前変更
+
+additional_notes: |
+  - 最も確実な解決策はインラインSVG方式（解決策2）です
+  - サーバー起動時にNodeの作業ディレクトリがどこになっているかも重要です
+  - MIMEタイプについては「server.js」ですでに設定されているため問題ないと思われます
+  - ブラウザの開発者ツールのNetworkタブで実際のリクエスト状況も確認すると良いでしょう
